@@ -1,0 +1,70 @@
+#!/bin/bash
+
+#install option to install dependencies
+if [ "$1" == "install" ]; then
+
+    if ! command -v node &> /dev/null; then #checks for node.js 
+        sudo apt update > /dev/null 2>&1
+        sudo apt install -y nodejs > /dev/null 2>&1
+    fi
+
+    if ! command -v npm &> /dev/null; then #checks for npm
+        sudo apt install -y npm > /dev/null 2>&1
+    fi
+
+    npm install > /dev/null 2>&1
+
+    npm install dotenv > /dev/null 2>&1
+
+    npm install winston > /dev/null 2>&1
+
+    npm install shelljs > /dev/null 2>&1
+
+    npm install isomorphic-git > /dev/null 2>&1
+
+    npm install axios > /dev/null 2>&1
+
+    npm install jest > /dev/null 2>&1
+
+    npm install --save-dev jest@29.7.0 > /dev/null 2>&1
+
+    npm i --save-dev @types/jest > /dev/null 2>&1
+
+    npm install --save-dev @types/winston > /dev/null 2>&1
+
+
+    echo "9 dependencies installed..."
+
+    exit 0
+fi
+
+#test option to run our testing file
+if [ "$1" == "test" ]; then
+    #hot fix for ./run test - deletes all js files so it doesnt get confused
+    find ./src -name "*.js" -type f -delete 
+    # Run Jest tests but suppress the output to /dev/null
+    npx jest --coverage --json --outputFile=coverage/testResults.json > /dev/null 2>&1
+
+    # Compile the coverageReport.ts file to JavaScript using tsc
+    npx tsc ./src/coverageReport.ts
+    # Run the compiled JavaScript file (coverageReport.js) to print only the necessary output
+    node ./src/coverageReport.js
+    exit 0
+fi
+
+#assuming its not install or test, and SOME argument is passed
+#we will assume it is a filepath and verify in our main.ts file
+if [ -n "$1" ]; then
+    npx tsc ./src/main.ts
+    node ./src/main.js "$1"
+    # Capture the exit code of the Node.js process
+    NODE_EXIT_CODE=$?
+
+    # Exit with the same code as the Node.js process
+    exit $NODE_EXIT_CODE
+fi
+
+#if no argument is passed, exit 1 for error and print message
+echo "error, no arguments passed"
+
+exit 1
