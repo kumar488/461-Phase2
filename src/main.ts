@@ -34,13 +34,15 @@ const urls = url_file
 
 // import fetch/print functions and interfaces
 import calculateNetScore, { calculateBusFactorScore, calculateCorrectness,
-                            calculateRampUpScore, calculateResponsiveMaintainerScore
+                            calculateRampUpScore, calculateResponsiveMaintainerScore,
+                            calculateVersionPinning
                           } from './CalculateMetrics';
 
 
 import fetchRepositoryInfo, { fetchRepositoryUsers, fetchRepositoryIssues,
                               RepositoryInfo, RepositoryIssues, RepositoryUsers,
-                              getNpmPackageGithubRepo
+                              getNpmPackageGithubRepo, fetchRepositoryDependencies,
+                              RepositoryDependencies
                             } from './GitHubAPIcaller';
                           
 
@@ -109,6 +111,7 @@ for( let i = 0; i < urls.length; i++){ //loop through all of the urls
       // get inferfaces to get all metrics for repository information
       const repoIssues: RepositoryIssues = await fetchRepositoryIssues(owner, repository);
       const repoUsers:  RepositoryUsers  = await fetchRepositoryUsers(owner, repository);
+      const repoDependencies: RepositoryDependencies = await fetchRepositoryDependencies(owner, repository);
 
       // API metric calculations
       //bus factor
@@ -135,8 +138,14 @@ for( let i = 0; i < urls.length; i++){ //loop through all of the urls
       end = performance.now();
       const responsiveMaintainerLatency = ((end - start) / 1000).toFixed(3);
 
+      //version pinning
+      start = performance.now();
+      const versionPinning = calculateVersionPinning(repoDependencies);
+      end = performance.now();
+      const versionPinningLatency = ((end - start) / 1000).toFixed(3);
+
       //net score
-      const netScore = calculateNetScore(busFactor, correctness, responsiveMaintainer, rampUp, foundLicense);
+      const netScore = calculateNetScore(busFactor, correctness, responsiveMaintainer, rampUp, foundLicense, versionPinning);
 
       netScoreEnd = performance.now();
 
