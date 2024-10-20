@@ -72,6 +72,25 @@ export interface RepositoryUsers {
   };
 }
 
+export interface RepositoryDependencies {
+  data: {
+    repository: {
+      dependencyGraphManifests: {
+        totalCount: number;
+        nodes: Array<{
+          dependencies: {
+            totalCount: number;
+            nodes: Array<{
+              packageName: string;
+              requirements: string;
+            }>;
+          };
+        }>;
+      };
+    }
+  }
+}
+
 /////// GraphQL API calls for different information ///////
 
 // function to call API for basic repo information
@@ -196,6 +215,43 @@ export async function fetchRepositoryUsers(owner: string, name: string): Promise
   return result;
 }
 
+export async function fetchRepositoryDependencies(owner: string, name: string): Promise<RepositoryDependencies> {
+  const query = `
+    query {
+      repository(owner: "${owner}", name: "${name}") {
+        dependencyGraphManifests(first: 1) {
+          totalCount
+          nodes {
+            dependencies(first: 100) {
+              totalCount
+              nodes {
+                packageName
+                requirements
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await fetch(GITHUB_API_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  if(!response.ok) {
+    throw new Error(`Failed to fetch data: ${response.statusText}`);
+  }
+
+  const result: RepositoryDependencies = await response.json();
+  
+  return result;
+}
 
 /**
  * Fetches NPM package details from the NPM registry and extracts the GitHub repository URL.
