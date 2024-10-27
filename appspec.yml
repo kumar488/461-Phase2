@@ -1,0 +1,22 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /home/ec2-user/myprogram  # Adjust based on your desired directory
+
+hooks:
+  BeforeInstall:
+    - location: scripts/install_dependencies.sh
+      timeout: 300
+      runas: ec2-user
+
+  ApplicationStart:
+    - location: scripts/run_program.sh
+      timeout: 300
+      runas: ec2-user
+  
+  ApplicationStop:
+  - location: scripts/stop_program.sh
+    timeout: 300
+    runas: ec2-user
