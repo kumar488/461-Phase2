@@ -3,7 +3,7 @@ os: linux
 
 files:
   - source: /
-    destination: /home/ec2-user/myprogram  # Adjust based on your desired directory
+    destination: /home/ec2-user/461-Phase2
 
 hooks:
   BeforeInstall:
