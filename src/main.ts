@@ -34,15 +34,15 @@ const urls = url_file
 
 // import fetch/print functions and interfaces
 import calculateNetScore, { calculateBusFactorScore, calculateCorrectness,
-                            calculateRampUpScore, calculateResponsiveMaintainerScore
+                            calculateRampUpScore, calculateResponsiveMaintainerScore,
+                            calculateVersionPinning
                           } from './CalculateMetrics';
 
-
-import fetchRepositoryInfo, { fetchRepositoryUsers, fetchRepositoryIssues,
-                              RepositoryInfo, RepositoryIssues, RepositoryUsers,
-                              getNpmPackageGithubRepo
-                            } from './GitHubAPIcaller';
-                          
+import  { fetchRepositoryInfo, fetchRepositoryUsers, fetchRepositoryIssues,
+          RepositoryInfo, RepositoryIssues, RepositoryUsers,
+          getNpmPackageGithubRepo, fetchRepositoryDependencies,
+          RepositoryDependencies
+        } from './GitHubAPIcaller';                          
 
 import { getLicense } from './License';
 
@@ -109,6 +109,7 @@ for( let i = 0; i < urls.length; i++){ //loop through all of the urls
       // get inferfaces to get all metrics for repository information
       const repoIssues: RepositoryIssues = await fetchRepositoryIssues(owner, repository);
       const repoUsers:  RepositoryUsers  = await fetchRepositoryUsers(owner, repository);
+      const repoDependencies: RepositoryDependencies = await fetchRepositoryDependencies(owner, repository);
 
       // API metric calculations
       //bus factor
@@ -135,18 +136,25 @@ for( let i = 0; i < urls.length; i++){ //loop through all of the urls
       end = performance.now();
       const responsiveMaintainerLatency = ((end - start) / 1000).toFixed(3);
 
+      //version pinning
+      start = performance.now();
+      const versionPinning = calculateVersionPinning(repoDependencies);
+      end = performance.now();
+      const versionPinningLatency = ((end - start) / 1000).toFixed(3);
+
       //net score
-      const netScore = calculateNetScore(busFactor, correctness, responsiveMaintainer, rampUp, foundLicense);
+      const netScore = calculateNetScore(busFactor, correctness, responsiveMaintainer, rampUp, foundLicense, versionPinning);
 
       netScoreEnd = performance.now();
 
       const netScoreLatency = ((netScoreEnd - netScoreStart) / 1000).toFixed(3);
 
       // Assuming each variable is defined correctly for each URL
-      var output_string = `{"URL":"${urls[i]}", "NetScore":${netScore}, "NetScore_Latency": ${netScoreLatency}, "RampUp":${rampUp}, "RampUp_Latency": ${rampUpLatency}, "Correctness":${correctness}, "Correctness_Latency":${correctnessLatency}, "BusFactor":${busFactor}, "BusFactor_Latency": ${busFactorLatency}, "ResponsiveMaintainer":${responsiveMaintainer}, "ResponsiveMaintainer_Latency": ${responsiveMaintainerLatency}, "License":${foundLicense}, "License_Latency": ${foundLicenseLatency}}`;
+      var output_string = `{"URL":"${urls[i]}", "NetScore":${netScore}, "NetScore_Latency": ${netScoreLatency}, "RampUp":${rampUp}, "RampUp_Latency": ${rampUpLatency}, "Correctness":${correctness}, "Correctness_Latency":${correctnessLatency}, "BusFactor":${busFactor}, "BusFactor_Latency": ${busFactorLatency}, "ResponsiveMaintainer":${responsiveMaintainer}, "ResponsiveMaintainer_Latency": ${responsiveMaintainerLatency}, "VersionPinning": ${versionPinning}, "VersionPinning_Latency": ${versionPinningLatency}, "License":${foundLicense}, "License_Latency": ${foundLicenseLatency}}`;
       
       logger.info("Generating JSON output for URL: " + urls[i]);
       // Only write the JSON object followed by a newline
+      logger.info(`netScore: ${netScore}\nrampUp: ${rampUp}\ncorrectness: ${correctness}\nbusFactor: ${busFactor}\nresponsiveMaintainer: ${responsiveMaintainer}\nversionPinning: ${versionPinning}\nfoundLicense: ${foundLicense}`);
       process.stdout.write(output_string + '\n');
 
   } 

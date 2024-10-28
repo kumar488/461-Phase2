@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as mainModule from '../src/main';
 import logger from '../src/logger';
 import { getLicense } from '../src/License';
-import fetchRepositoryInfo, { fetchRepositoryIssues, fetchRepositoryUsers } from '../src/GitHubAPIcaller';
+import { fetchRepositoryInfo, fetchRepositoryIssues, fetchRepositoryUsers, fetchRepositoryDependencies } from '../src/GitHubAPIcaller';
 import winston from 'winston';
 
 // Mock external dependencies

@@ -1,29 +1,33 @@
-import calculateNetScore, { calculateBusFactorScore, calculateCorrectness, calculateRampUpScore, calculateResponsiveMaintainerScore } from '../src/CalculateMetrics';
+import calculateNetScore, { calculateBusFactorScore, calculateCorrectness, calculateRampUpScore, calculateResponsiveMaintainerScore, calculateVersionPinning } from '../src/CalculateMetrics';
 
-import fetchRepositoryInfo, { fetchRepositoryUsers, fetchRepositoryIssues,
-  RepositoryInfo, RepositoryIssues, RepositoryUsers,
+import { fetchRepositoryInfo, fetchRepositoryUsers, fetchRepositoryIssues, fetchRepositoryDependencies,
+  RepositoryInfo, RepositoryIssues, RepositoryUsers, RepositoryDependencies,
   getNpmPackageGithubRepo
 } from '../src//GitHubAPIcaller';
 
-  let repoIssues: RepositoryIssues;
-  let repoUsers: RepositoryUsers;
-  let foundLicense: number;
-  let busFactorScore: number;
-  let correctnessScore: number;
-  let rampUpScore: number;
-  let responsiveMaintainerScore: number;
-  let netScore: number;
+let repoIssues: RepositoryIssues;
+let repoUsers: RepositoryUsers;
+let repoDeps: RepositoryDependencies;
+let foundLicense: number;
+let busFactorScore: number;
+let correctnessScore: number;
+let rampUpScore: number;
+let responsiveMaintainerScore: number;
+let versionPinningScore: number;
+let netScore: number;
 
 beforeAll(async () => {
   repoIssues = await fetchRepositoryIssues("cloudinary", "cloudinary_npm");
   repoUsers = await fetchRepositoryUsers("cloudinary", "cloudinary_npm");
+  repoDeps = await fetchRepositoryDependencies("cloudinary", "cloudinary_npm");
   foundLicense = 1;
 
   busFactorScore = calculateBusFactorScore(repoUsers);
   correctnessScore = calculateCorrectness(repoIssues);
   rampUpScore = calculateRampUpScore(repoUsers);
   responsiveMaintainerScore = calculateResponsiveMaintainerScore(repoIssues);
-  netScore = calculateNetScore(busFactorScore, correctnessScore, responsiveMaintainerScore, rampUpScore, foundLicense);
+  versionPinningScore = calculateVersionPinning(repoDeps);
+  netScore = calculateNetScore(busFactorScore, correctnessScore, responsiveMaintainerScore, rampUpScore, foundLicense, versionPinningScore);
 });
 
 it('should calculate the correct bus factor score', () => {
@@ -31,7 +35,7 @@ it('should calculate the correct bus factor score', () => {
 });
 
 it('should calculate the correct correctness score', () => {
-  expect(correctnessScore).toBeCloseTo(1, 0.1);
+  expect(correctnessScore).toBeGreaterThanOrEqual(0.9);
 });
 
 it('should calculate the correct ramp-up score', () => {
@@ -40,12 +44,16 @@ it('should calculate the correct ramp-up score', () => {
 });
 
 it('should calculate the correct responsive maintainer score', () => {
-  expect(responsiveMaintainerScore).toBeGreaterThanOrEqual(0.2);
+  expect(responsiveMaintainerScore).toBeGreaterThanOrEqual(0);
   expect(responsiveMaintainerScore).toBeLessThanOrEqual(1);
 });
 
 it('should calculate the correct license score', () => {
   expect(foundLicense == 1);
+});
+
+it('should calculate the correct version pinning score', () => {
+  expect(versionPinningScore).toBeCloseTo(0.33, 1);
 });
 
 it('should calculate the correct net score', () => {

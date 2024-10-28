@@ -1,4 +1,4 @@
-import calculateNetScore, { calculateBusFactorScore, calculateCorrectness, calculateRampUpScore, calculateResponsiveMaintainerScore } from '../src/CalculateMetrics';
+import calculateNetScore, { calculateBusFactorScore, calculateCorrectness, calculateRampUpScore, calculateResponsiveMaintainerScore, calculateVersionPinning } from '../src/CalculateMetrics';
 
 describe('CalculateMetrics functions', () => {
   // Mock data for RepositoryUsers and RepositoryIssues
@@ -85,6 +85,50 @@ describe('CalculateMetrics functions', () => {
     }
   };
   
+  const mockRepositoryDependencies1 = {
+    data: {
+      repository: {
+        dependencyGraphManifests: {
+          totalCount: 1,
+          nodes: [
+            {
+              dependencies: {
+                totalCount: 2,
+                nodes: [
+                  {
+                    packageName: 'dependency1',
+                    requirements: '^1.0.0'
+                  },
+                  {
+                    packageName: 'dependency2',
+                    requirements: '^2.0.0'
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  };
+  const mockRepositoryDependencies2 = {
+    data: {
+      repository: {
+        dependencyGraphManifests: {
+          totalCount: 0,
+          nodes: [
+            {
+              dependencies: {
+                totalCount: 0,
+                nodes: [
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  };
 
   // Test for calculateBusFactorScore
   it('should calculate bus factor score correctly', () => {
@@ -111,9 +155,19 @@ describe('CalculateMetrics functions', () => {
     expect(responsiveMaintainer).toBeCloseTo(0.5, 2); // Expect 50% of issues resolved
   });
 
+  // Tests for versionPinningScore
+  it('should calculate version pinning score correctly', () => {
+    const versionPinning = calculateVersionPinning(mockRepositoryDependencies1);
+    expect(versionPinning).toBe(1);
+  });
+  it('should calculate version pinning score correctly', () => {
+    const versionPinning = calculateVersionPinning(mockRepositoryDependencies2);
+    expect(versionPinning).toBe(1);
+  });
+
   // Test for calculateNetScore
   it('should calculate net score correctly', () => {
-    const netScore = calculateNetScore(0.5, 0.5, 0.5, 0.5, 0.5);
-    expect(netScore).toBeCloseTo(0.5); // Expect the weighted net score to be around 0.5
+    const netScore = calculateNetScore(0.5, 0.5, 0.5, 0.5, 0, 0.5);
+    expect(netScore).toBe(0); // Expect the weighted net score to be around 0.5
   });
 });
