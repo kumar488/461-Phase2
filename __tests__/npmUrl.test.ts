@@ -60,9 +60,9 @@ describe('License and Metrics Calculation', () => {
       const mockRepoDeps = { data: { repository: { dependencyGraphManifests: { nodes: [] } } } };
   
       (fetchRepositoryInfo as jest.Mock).mockResolvedValue(mockRepoInfo);
-      (fetchRepositoryIssues as jest.Mock).mockResolvedValue(mockRepoIssues);
+      // (fetchRepositoryIssues as jest.Mock).mockResolvedValue(mockRepoIssues);
       (fetchRepositoryUsers as jest.Mock).mockResolvedValue(mockRepoUsers);
-      (fetchRepositoryDependencies as jest.Mock).mockResolvedValue(mockRepoDeps);
+      // (fetchRepositoryDependencies as jest.Mock).mockResolvedValue(mockRepoDeps);
   
       const { processPackageData } = require('../src/main');
       const license = await getLicense('https://github.com/owner/repository', mockRepository);
