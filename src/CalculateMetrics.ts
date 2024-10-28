@@ -1,6 +1,6 @@
-import fetchRepositoryInfo, { fetchRepositoryUsers, fetchRepositoryIssues,
-    RepositoryInfo, RepositoryIssues, RepositoryUsers,
-  } from './GitHubAPIcaller';
+import {fetchRepositoryInfo, fetchRepositoryUsers, fetchRepositoryIssues,
+  RepositoryInfo, RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies
+} from './GitHubAPIcaller';
 
 export function calculateBusFactorScore(users: RepositoryUsers): number {
   // get total contributions for each user
@@ -110,11 +110,26 @@ export function calculateResponsiveMaintainerScore(issues: RepositoryIssues): nu
   return Math.round(responsiveMaintainer * 100) / 100;
 }
 
-export default function calculateNetScore(busFactor: number, correctness: number, responsiveMaintainer: number,
-                                          rampUp: number, licenseScore: number): number {
-  const netScore = (0.2 * busFactor) + (0.25 * correctness) + (0.35 * responsiveMaintainer) + (0.1 * rampUp) + 
-                   (0.1 * licenseScore);
+export function calculateVersionPinning(dependencies: RepositoryDependencies): number {
+  const totalDependencies = dependencies.data.repository.dependencyGraphManifests.totalCount;
+  const pinnedDependencies = dependencies.data.repository.dependencyGraphManifests.nodes.filter(
+    (manifest) => manifest.dependencies.nodes.some((dependency) => dependency.requirements !== null)
+  ).length;
 
-  // round to nearest hundredth
-  return Math.round(netScore * 100) / 100;
+  if(totalDependencies === 0) {
+    return 1;
+  }
+
+  const versionPinningScore = pinnedDependencies / totalDependencies;
+
+  // round to the nearest hundredth
+  return Math.round(versionPinningScore * 100) / 100;
+}
+
+export default function calculateNetScore(busFactor: number, correctness: number, responsiveMaintainer: number,
+                                          rampUp: number, licenseScore: number, versionPinning: number): number {
+  const netScore = licenseScore * ((0.2 * busFactor) + (0.25 * correctness) + (0.35 * responsiveMaintainer) + (0.1 * rampUp) + (0.1 * versionPinning));
+
+// round to nearest hundredth
+return Math.round(netScore * 100) / 100;
 }

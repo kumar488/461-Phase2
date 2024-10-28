@@ -1,5 +1,5 @@
 import { getLicense } from '../src/License';
-import fetchRepositoryInfo, { fetchRepositoryIssues, fetchRepositoryUsers, RepositoryInfo, RepositoryIssues, RepositoryUsers } from '../src/GitHubAPIcaller';
+import {fetchRepositoryInfo, fetchRepositoryDependencies, fetchRepositoryIssues, fetchRepositoryUsers, RepositoryInfo, RepositoryDependencies, RepositoryIssues, RepositoryUsers } from '../src/GitHubAPIcaller';
 import calculateNetScore, { calculateBusFactorScore, calculateCorrectness, calculateRampUpScore, calculateResponsiveMaintainerScore } from '../src/CalculateMetrics';
 
 import logger from '../src/logger';
@@ -57,10 +57,12 @@ describe('License and Metrics Calculation', () => {
       const mockRepoInfo = { data: { repository: { name: '', owner: { login: '' }, forks: { totalCount: 0 } } } };
       const mockRepoIssues = { data: { repository: { issues: { totalCount: 0, edges: [] }, closedIssues: { totalCount: 0 } } } };
       const mockRepoUsers = { data: { repository: { mentionableUsers: { edges: [] } } } };
+      const mockRepoDeps = { data: { repository: { dependencyGraphManifests: { nodes: [] } } } };
   
       (fetchRepositoryInfo as jest.Mock).mockResolvedValue(mockRepoInfo);
       (fetchRepositoryIssues as jest.Mock).mockResolvedValue(mockRepoIssues);
       (fetchRepositoryUsers as jest.Mock).mockResolvedValue(mockRepoUsers);
+      (fetchRepositoryDependencies as jest.Mock).mockResolvedValue(mockRepoDeps);
   
       const { processPackageData } = require('../src/main');
       const license = await getLicense('https://github.com/owner/repository', mockRepository);
