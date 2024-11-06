@@ -22,7 +22,7 @@ export interface RepositoryInfo {
     };
   };
 }
-
+/*
 export interface PullRequests {
   data: {
     repository: {
@@ -35,6 +35,21 @@ export interface PullRequests {
           };
         }>;
       };
+    };
+  };
+}
+*/
+
+interface PullRequest {
+  id: string;
+  additions: number;
+  reviews: { edges: { node: { state: string } }[] };
+}
+
+interface RepositoryResponse {
+  repository: {
+    pullRequests: {
+      edges: { node: PullRequest }[];
     };
   };
 }
@@ -110,17 +125,24 @@ export interface RepositoryDependencies {
 
 /////// GraphQL API calls for different information ///////
 
-export async function fetchPullRequests(owner: string, name: string): Promise<PullRequests> {
+export async function fetchPullRequests(owner: string, name: string): Promise<RepositoryResponse> {
   
   const query = `
     query {
       repository(owner: "${owner}", name: "${name}") {
-        requests {
-          totalCount
+        pullRequests(first: 100, states: [MERGED], baseRefName: "main") {
           edges {
             node {
               id
-              reviewed
+              title
+              additions
+              reviews(first: 1){
+                edges {
+                  node {
+                    state
+                  }
+                }
+              }
             }
           }
         }
@@ -142,7 +164,7 @@ export async function fetchPullRequests(owner: string, name: string): Promise<Pu
     throw new Error(`Failed to fetch data: ${response.statusText}`);
   }
 
-  const result: PullRequests = await response.json();
+  const result: RepositoryResponse = await response.json();
   
   return result;
   

@@ -1,5 +1,5 @@
 import {fetchRepositoryInfo, fetchRepositoryUsers, fetchRepositoryIssues,
-  RepositoryInfo, RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies, PullRequests
+  RepositoryInfo, RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies, RepositoryResponse
 } from './GitHubAPIcaller';
 
 export function calculateBusFactorScore(users: RepositoryUsers): number {
@@ -126,8 +126,33 @@ export function calculateVersionPinning(dependencies: RepositoryDependencies): n
   return Math.round(versionPinningScore * 100) / 100;
 }
 
-export function calculatePullRequestReviewFraction(pull_requests: PullRequests): number {
-  
+
+export function calculatePullRequestReviewFraction(response: RepositoryResponse): number {
+  //let prCursor: string | null = null;
+  let totalLinesWithReview = 0;
+  let totalLinesAdded = 0;
+  const prs = response.repository.pullRequests.edges;
+  for (const pr of prs) {
+    const prNode = pr.node;
+    totalLinesAdded += prNode.additions;
+    const hasReview = prNode.reviews.edges.some(review => {review.node.state === 'APPROVED'});
+    if (hasReview) {
+      totalLinesWithReview += prNode.additions;
+    }
+  }
+
+  //prCursor = prs.length > 0 ? prs[prs.length - 1].node.id : null;
+
+  if (totalLinesAdded === 0) {
+    console.log('No lines added to the main branch.');
+    return 0; //maybe should be 1
+  }
+
+  const reviewRatio = totalLinesWithReview / totalLinesAdded;
+
+  return reviewRatio;
+//------------------------------------------------------
+  /*
   const totalPRs = pull_requests.requests.edges.length;
   //const totalPRs = pull_requests.requests.totalCount;
   const reviewedPRs = pull_requests.requests.edges.filter(pr => pr.node.reviewed).length;
@@ -137,6 +162,7 @@ export function calculatePullRequestReviewFraction(pull_requests: PullRequests):
   }
 
   return reviewedPRs / totalPRs;
+  */
 
 }
 
