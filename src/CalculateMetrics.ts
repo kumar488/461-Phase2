@@ -1,5 +1,5 @@
 import {fetchRepositoryInfo, fetchRepositoryUsers, fetchRepositoryIssues,
-  RepositoryInfo, RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies
+  RepositoryInfo, RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies, PullRequests
 } from './GitHubAPIcaller';
 
 export function calculateBusFactorScore(users: RepositoryUsers): number {
@@ -124,6 +124,20 @@ export function calculateVersionPinning(dependencies: RepositoryDependencies): n
 
   // round to the nearest hundredth
   return Math.round(versionPinningScore * 100) / 100;
+}
+
+export function calculatePullRequestReviewFraction(pull_requests: PullRequests): number {
+  
+  const totalPRs = pull_requests.requests.edges.length;
+  //const totalPRs = pull_requests.requests.totalCount;
+  const reviewedPRs = pull_requests.requests.edges.filter(pr => pr.node.reviewed).length;
+
+  if (totalPRs === 0) {
+    return 0;
+  }
+
+  return reviewedPRs / totalPRs;
+
 }
 
 export default function calculateNetScore(busFactor: number, correctness: number, responsiveMaintainer: number,
