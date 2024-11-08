@@ -126,7 +126,9 @@ export function calculateVersionPinning(dependencies: RepositoryDependencies): n
   return Math.round(versionPinningScore * 100) / 100;
 }
 
-
+export function checkApproved(edge: string): boolean{
+  return edge === 'APPROVED';
+}
 export function calculatePullRequestReviewFraction(response: RepositoryResponse): number {
   //let prCursor: string | null = null;
   let totalLinesWithReview = 0;
@@ -135,7 +137,8 @@ export function calculatePullRequestReviewFraction(response: RepositoryResponse)
   for (const pr of prs) {
     const prNode = pr.node;
     totalLinesAdded += prNode.additions;
-    const hasReview = prNode.reviews.edges.some(review => {review.node.state === 'APPROVED'});
+    //const hasReview = prNode.reviews.edges.some(prNode.reviews.edges review => {review.node.state === 'APPROVED'});
+    const hasReview = prNode.reviews.edges.some(checkApproved);
     if (hasReview) {
       totalLinesWithReview += prNode.additions;
     }
