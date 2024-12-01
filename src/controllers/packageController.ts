@@ -3,6 +3,35 @@ import { getAllPackages, getPackage, createPackageModel, deletePackageModel } fr
 import { addPackage } from '../packages/packagedb';
 import { Buffer } from 'buffer';
 import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, debloatPackageContent } from '../helper';
+import { getRepositoryRating } from '../main';
+
+export const getPackageVersionRange = async (packageName: string): Promise<string> => {
+    try {
+        // Query to get all versions for the given package name
+        const [rows]: any = await pool.query(
+            'SELECT version FROM packages WHERE name = ? ORDER BY version',
+            [packageName]
+        );
+
+        if (rows.length === 0) {
+            return `No versions found for package: ${packageName}`;
+        }
+
+        // Extract all versions from the result
+        const versions = rows.map((row: any) => row.version);
+
+        // If only one version, return it
+        if (versions.length === 1) {
+            return versions[0];
+        }
+
+        // If multiple versions, return the range
+        return `${versions[0]}-${versions[versions.length - 1]}`;
+    } catch (error) {
+        console.error('Error getting package version range:', error);
+        throw new Error('Internal Server Error while getting package version range');
+    }
+};
 
 export const createPackage = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -200,7 +229,7 @@ export const deletePackage = async (req: Request, res: Response) => {
     }
 };
 
-export const getPackageRate = (req: Request, res: Response) => {
+export const getPackageRate = async (req: Request, res: Response) => {
     try {
         const packageId = req.params.id;
         const authorizationHeader = req.headers['x-authorization'];
@@ -213,12 +242,24 @@ export const getPackageRate = (req: Request, res: Response) => {
             res.status(400).json({ error: 'Missing Package ID' });
         }
 
-        // Logic to fetch the package's rating
-        if (packageId === '1') {
-            res.status(200).json({ packageId, rating: 4.5 });
+        const pkg = await getPackage(packageId);
+
+        if (!pkg) {
+            res.status(404).json({ error: 'Package not found' });
+            return;
+        }
+
+        const rating = await getRepositoryRating(pkg.url);
+        if (rating !== null) {
+            res.status(200).json({ packageId, rating });
         } else {
             res.status(404).json({ error: 'Package does not exist.' });
         }
+        // if (packageId === '1') { //debug
+        //     res.status(200).json({ packageId, rating: 4.5 });
+        // } else { //debug
+        //     res.status(404).json({ error: 'Package does not exist.' });
+        // }
     } catch (error) {
         res.status(500).json({ error: 'The package rating system choked on at least one of the metrics.' });
     }
