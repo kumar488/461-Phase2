@@ -9,6 +9,9 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME
 });
 
+// Maximum number of packages that can be returned in a single request
+const MAX_PACKAGES_LIMIT = 10;
+
 // Get the list of packages from the registry
 export const getPackages = async (req: Request, res: Response) => {
     try {
@@ -35,6 +38,11 @@ export const getPackages = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'PackageQuery must include a valid package name' });
         }
 
+        // If too many packages are requested, respond with 413
+        if (packageQueries.length > MAX_PACKAGES_LIMIT) {
+            return res.status(413).json({ error: 'Too many packages requested. Maximum limit is ' + MAX_PACKAGES_LIMIT });
+        }
+
         // SQL query - search for packages fitting the query
         let sqlQuery = 'SELECT id, name, version FROM packages';
         const queryParams: any[] = [];
@@ -44,8 +52,8 @@ export const getPackages = async (req: Request, res: Response) => {
             queryParams.push(packageName);
         }
 
-        sqlQuery += ' LIMIT 10 OFFSET ?';
-        queryParams.push(offset);
+        sqlQuery += ' LIMIT ? OFFSET ?';
+        queryParams.push(MAX_PACKAGES_LIMIT, offset);
 
         // Execute the SQL query
         const [rows]: any = await pool.query(sqlQuery, queryParams);
@@ -62,7 +70,7 @@ export const getPackages = async (req: Request, res: Response) => {
         }));
 
         // Include the offset for pagination in response headers
-        res.set('offset', String(offset + 10));
+        res.set('offset', String(offset + MAX_PACKAGES_LIMIT));
 
         // Return the list of packages
         res.status(200).json(packages);
@@ -71,3 +79,4 @@ export const getPackages = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
