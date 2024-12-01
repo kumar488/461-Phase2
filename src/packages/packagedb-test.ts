@@ -30,7 +30,8 @@ async function testDatabaseFunctions() {
     try {
         // Test addPackage function
         console.log('Adding package...');
-        const packageId = await addPackage(testPackage);
+        const result = await addPackage(testPackage);
+        const packageId = result.id;
         console.log(`Package added with ID: ${packageId}`);
 
         // Test getPackageByID function

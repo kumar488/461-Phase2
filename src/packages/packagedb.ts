@@ -104,47 +104,46 @@ export async function createDatabase() {
 export async function addPackage(packageData: PackageData) {
     const connection = await createConnection();
     try {
-      // Extract fields and values from packageData
+      // Check for duplicate package (by Name and Version)
+      const [rows] = await connection.execute(
+        `SELECT COUNT(*) as count FROM ${tableName} WHERE Name = ? AND Version = ?`,
+        [packageData.Name, packageData.Version]
+      );
+      const count = (rows as any)[0]?.count || 0;
+      if (count > 0) {
+        throw { code: 409, message: 'Package already exists' };
+      }
+  
+      // Include rate checking here
+  
+      // Insert the package
       const fields: string[] = [];
       const values: (string | number)[] = [];
       const placeholders: string[] = [];
-  
       for (const key in packageData) {
-        if (packageData[key as keyof PackageData] !== undefined) { // Only include provided fields
+        if (packageData[key as keyof PackageData] !== undefined) {
           fields.push(key);
           values.push(packageData[key as keyof PackageData] as string | number);
           placeholders.push('?');
         }
       }
   
-      // Ensure there's something to insert
-      if (fields.length === 0) {
-        throw new Error('No fields provided to insert');
-      }
-  
-      // Build the query dynamically
-      const query = `
-        INSERT INTO ${tableName} 
-        (${fields.join(', ')})
-        VALUES (${placeholders.join(', ')})
-      `;
-  
-      // Execute the query and get the result
+      const query = `INSERT INTO ${tableName} (${fields.join(', ')}) VALUES (${placeholders.join(', ')})`;
       const [result] = await connection.execute(query, values);
   
-      // Assuming ID is auto-incremented, we retrieve it from insertId
       const insertedId = (result as any).insertId;
-      logger.info(`Row added to table with ID ${insertedId}`);
+      logger.info(`New row added to table with ID ${insertedId}`);
   
-      return insertedId;
-    } catch (err) {
+      return { id: insertedId };
+    } catch (err: any) {
+      if (err.code) throw err; // Custom error codes
       logger.error('Error adding row to table', err);
-      throw err;
+      throw { code: 500, message: 'Internal Server Error' }; // General server error
     } finally {
       await connection.end();
       logger.info('Connection closed');
     }
-  }
+}
 
 export async function deletePackage(id: number) {
     const connection = await createConnection();
