@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { getAllPackages, getPackage, createPackageModel, deletePackageModel } from '../models/packageModel';
 import { addPackage } from '../packages/packagedb';
 import { Buffer } from 'buffer';
-import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, debloatPackageContent } from '../helper';
+import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, 
+    debloatPackageContent, calculateScores
+    } from '../helper';
 
 export const createPackage = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -87,8 +89,33 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
                 finalPackageData.Content = base64Content;
                 finalPackageData.Name = name;
                 finalPackageData.Version = version;
+
+                // Call calculateScores and add to finalPackageData
+                const url = await getGithubURL(finalPackageData.URL);
+                if (!url) {
+                    // Status code 400 may change (not in spec sheet)
+                    res.status(400).json({ error: 'Failed to fetch and process GitHub repository.' });
+                    return;
+                }
+
+                const scores = await calculateScores(url);
+                finalPackageData.NET_SCORE = scores.NetScore;
+                finalPackageData.BUS_FACTOR_SCORE = scores.BusFactor;
+                finalPackageData.RAMP_UP_SCORE = scores.RampUp;
+                finalPackageData.CORRECTNESS_SCORE = scores.Correctness;
+                finalPackageData.RESPONSIVE_MAINTAINER_SCORE = scores.ResponsiveMaintainer;
+                finalPackageData.LICENSE_SCORE = scores.License;
+                finalPackageData.PINNED_PRACTICE_SCORE = scores.VersionPinning;
+                finalPackageData.PULL_REQUEST_RATING_SCORE = -1; // Placeholder for future implementation
+
+                if (scores.NetScore < 0) {
+                    res.status(424).json({ error: 'NetScore is too low. Package not accepted.' });
+                    return;
+                }
+
             } catch (err) {
-                res.status(424).json({ error: 'Failed to fetch and process GitHub repository.' });
+                // Status code 500 may change (not in spec sheet)
+                res.status(500).json({ error: 'Failed to fetch and process GitHub repository.' });
                 return;
             }
         }

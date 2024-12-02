@@ -1,6 +1,15 @@
 import axios from 'axios';
 import { parse } from 'json5';
 import AdmZip from 'adm-zip';
+import calculateNetScore, { calculateBusFactorScore, calculateCorrectness,
+    calculateRampUpScore, calculateResponsiveMaintainerScore, calculateVersionPinning
+  } from './CalculateMetrics';
+
+import  {fetchRepositoryUsers, fetchRepositoryIssues,
+RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies
+} from './GitHubAPIcaller';                          
+
+import { getLicense } from './License';
 
 export const getGithubURL = async (url: string): Promise<string | null> => {
     if (url.includes('github.com')) {
@@ -37,38 +46,9 @@ const fetchDefaultBranch = async (githubURL: string): Promise<string> => {
 const isValidSemver = (version: string): boolean => {
     const semverRegex = /^\d+\.\d+\.\d+$/;
     return semverRegex.test(version);
-  };
-  
-  // Extract version from package.json or VERSION file
-  const extractVersion = async (githubURL: string, branch: string): Promise<string> => {
-    const apiUrl = githubURL.replace('github.com', 'raw.githubusercontent.com');
-    const filesToCheck = [`package.json`, `VERSION`, `version.txt`];
-  
-    for (const file of filesToCheck) {
-      try {
-        const fileUrl = `${apiUrl}/${branch}/${file}`;
-        const response = await axios.get(fileUrl);
-        
-        if (file === 'package.json') {
-          const packageJson = JSON.parse(response.data);
-          if (packageJson.version && isValidSemver(packageJson.version)) {
-            return packageJson.version;
-          }
-        } else {
-          const version = response.data.trim();
-          if (isValidSemver(version)) {
-            return version;
-          }
-        }
-      } catch {
-        // Ignore missing files or invalid versions and continue to the next
-      }
-    }
-  
-    return '1.0.0'; // Default if no valid version found
-  };
-  
-  // Main function to fetch and process GitHub repo
+};
+
+// Main function to fetch and process GitHub repo
 export const fetchAndProcessGitHubRepo = async (githubURL: string): Promise<{ base64Content: string; packageJson: string }> => {
     try {
         // Get the default branch of the GitHub repository
@@ -148,3 +128,99 @@ export const debloatPackageContent = async (content: string): Promise<string> =>
     // TODO: Implement tree shaking, minification, and other debloat techniques
     return content; // Currently returns unmodified content
 };
+
+function extractOwnerAndRepo(githubURL: string): { owner: string; repository: string } {
+    const match = githubURL.match(/github\.com\/([^/]+)\/([^/]+)(\/|$)/);
+    if (!match) {
+        throw new Error('Invalid GitHub URL format.');
+    }
+    return { owner: match[1], repository: match[2] };
+}
+
+export async function calculateScores(githubURL: string): Promise<Record<string, any>> {
+    try {
+        // Extract owner and repository
+        const { owner, repository } = extractOwnerAndRepo(githubURL);
+
+        // Variables for latency calculations
+        let start: number;
+        let end: number;
+
+        let netScoreStart: number;
+        let netScoreEnd: number;
+
+        netScoreStart = performance.now();
+
+        // Get non-API metrics
+        start = performance.now();
+        const foundLicense: number = await getLicense(githubURL, repository);
+        end = performance.now();
+        const foundLicenseLatency = ((end - start) / 1000).toFixed(3);
+
+        // Get repository interfaces to calculate metrics
+        const repoIssues: RepositoryIssues = await fetchRepositoryIssues(owner, repository);
+        const repoUsers: RepositoryUsers = await fetchRepositoryUsers(owner, repository);
+        const repoDependencies: RepositoryDependencies = await fetchRepositoryDependencies(owner, repository);
+
+        // Calculate individual metrics and their latencies
+        start = performance.now();
+        const busFactor = calculateBusFactorScore(repoUsers);
+        end = performance.now();
+        const busFactorLatency = ((end - start) / 1000).toFixed(3);
+
+        start = performance.now();
+        const correctness = calculateCorrectness(repoIssues);
+        end = performance.now();
+        const correctnessLatency = ((end - start) / 1000).toFixed(3);
+
+        start = performance.now();
+        const rampUp = calculateRampUpScore(repoUsers);
+        end = performance.now();
+        const rampUpLatency = ((end - start) / 1000).toFixed(3);
+
+        start = performance.now();
+        const responsiveMaintainer = calculateResponsiveMaintainerScore(repoIssues);
+        end = performance.now();
+        const responsiveMaintainerLatency = ((end - start) / 1000).toFixed(3);
+
+        start = performance.now();
+        const versionPinning = calculateVersionPinning(repoDependencies);
+        end = performance.now();
+        const versionPinningLatency = ((end - start) / 1000).toFixed(3);
+
+        // Calculate net score
+        const netScore = calculateNetScore(
+            busFactor,
+            correctness,
+            responsiveMaintainer,
+            rampUp,
+            foundLicense,
+            versionPinning
+        );
+
+        netScoreEnd = performance.now();
+        const netScoreLatency = ((netScoreEnd - netScoreStart) / 1000).toFixed(3);
+
+        // Return results as a dictionary
+        return {
+            NetScore: netScore,
+            NetScore_Latency: netScoreLatency,
+            RampUp: rampUp,
+            RampUp_Latency: rampUpLatency,
+            Correctness: correctness,
+            Correctness_Latency: correctnessLatency,
+            BusFactor: busFactor,
+            BusFactor_Latency: busFactorLatency,
+            ResponsiveMaintainer: responsiveMaintainer,
+            ResponsiveMaintainer_Latency: responsiveMaintainerLatency,
+            VersionPinning: versionPinning,
+            VersionPinning_Latency: versionPinningLatency,
+            License: foundLicense,
+            License_Latency: foundLicenseLatency,
+        };
+    } catch (error) {
+        console.error(`Error calculating scores for URL ${githubURL}:`, error);
+        throw error;
+    }
+}
+
