@@ -164,3 +164,76 @@ for( let i = 0; i < urls.length; i++){ //loop through all of the urls
   })();
   
 }
+export async function getRepositoryRating(url: string): Promise<string> {
+  try {
+    let link_split = url.split("/");
+
+    let owner: string = "";
+    let repository: string = "";
+
+    if (link_split[2] === "github.com") {
+      owner = link_split[3];
+      repository = link_split[4].replace(".git", "");
+    } else if (link_split[2] === "www.npmjs.com") {
+      const githubRepoOut = await processPackageData(link_split[4]);
+      url = githubRepoOut;
+
+      let link_split_npm = githubRepoOut.split("/");
+      owner = link_split_npm[3];
+      repository = link_split_npm[4].replace(".git", "");
+    } else {
+      logger.error("URL is not a valid GitHub or NPM URL");
+      return "";
+    }
+
+    let start: number;
+    let end: number;
+
+    let netScoreStart: number = performance.now();
+
+    start = performance.now();
+    const foundLicense: number = await getLicense(url, repository);
+    end = performance.now();
+    const foundLicenseLatency = ((end - start) / 1000).toFixed(3);
+
+    const repoIssues: RepositoryIssues = await fetchRepositoryIssues(owner, repository);
+    const repoUsers: RepositoryUsers = await fetchRepositoryUsers(owner, repository);
+    const repoDependencies: RepositoryDependencies = await fetchRepositoryDependencies(owner, repository);
+
+    start = performance.now();
+    const busFactor = calculateBusFactorScore(repoUsers);
+    end = performance.now();
+    const busFactorLatency = ((end - start) / 1000).toFixed(3);
+
+    start = performance.now();
+    const correctness = calculateCorrectness(repoIssues);
+    end = performance.now();
+    const correctnessLatency = ((end - start) / 1000).toFixed(3);
+
+    start = performance.now();
+    const rampUp = calculateRampUpScore(repoUsers);
+    end = performance.now();
+    const rampUpLatency = ((end - start) / 1000).toFixed(3);
+
+    start = performance.now();
+    const responsiveMaintainer = calculateResponsiveMaintainerScore(repoIssues);
+    end = performance.now();
+    const responsiveMaintainerLatency = ((end - start) / 1000).toFixed(3);
+
+    start = performance.now();
+    const versionPinning = calculateVersionPinning(repoDependencies);
+    end = performance.now();
+    const versionPinningLatency = ((end - start) / 1000).toFixed(3);
+
+    const netScore = calculateNetScore(busFactor, correctness, responsiveMaintainer, rampUp, foundLicense, versionPinning);
+    let netScoreEnd: number = performance.now();
+    const netScoreLatency = ((netScoreEnd - netScoreStart) / 1000).toFixed(3);
+
+    const output_string = `{"URL":"${url}", "NetScore":${netScore}, "NetScore_Latency": ${netScoreLatency}, "RampUp":${rampUp}, "RampUp_Latency": ${rampUpLatency}, "Correctness":${correctness}, "Correctness_Latency":${correctnessLatency}, "BusFactor":${busFactor}, "BusFactor_Latency": ${busFactorLatency}, "ResponsiveMaintainer":${responsiveMaintainer}, "ResponsiveMaintainer_Latency": ${responsiveMaintainerLatency}, "VersionPinning": ${versionPinning}, "VersionPinning_Latency": ${versionPinningLatency}, "License":${foundLicense}, "License_Latency": ${foundLicenseLatency}}`;
+
+    return output_string;
+  } catch (error) {
+    logger.error('Error:', error);
+    return "";
+  }
+}
