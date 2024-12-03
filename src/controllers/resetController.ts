@@ -3,10 +3,7 @@ import mysql from 'mysql2/promise';
 
 // Default system credentials for resetting the database
 const DEFAULT_DB_CONFIG = {
-    host: 'ece461-db.clqecqq0aufc.us-east-1.rds.amazonaws.com',
-    user: 'admin',
-    password: 'ECE461Pass*',
-    database: 'ece461'
+
 };
 
 export const resetSystem = async (req: Request, res: Response) => {
