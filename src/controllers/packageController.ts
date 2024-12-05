@@ -2,9 +2,37 @@ import { Request, Response } from 'express';
 import { getAllPackages, getPackage, createPackageModel, deletePackageModel } from '../models/packageModel';
 import { addPackage, getPackageByID, getPackageVersions } from '../packages/packagedb';
 import { Buffer } from 'buffer';
-import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, 
-    debloatPackageContent, calculateScores, isValidVersion
-    } from '../helper';
+import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, debloatPackageContent } from '../helper';
+import { getRepositoryRating } from '../main';
+import pool from '../sqlhelper';
+
+export const getPackageVersionRange = async (packageName: string): Promise<string> => {
+    try {
+        // Query to get all versions for the given package name
+        const [rows]: any = await pool.query(
+            'SELECT version FROM packages WHERE name = ? ORDER BY version',
+            [packageName]
+        );
+
+        if (rows.length === 0) {
+            return `No versions found for package: ${packageName}`;
+        }
+
+        // Extract all versions from the result
+        const versions = rows.map((row: any) => row.version);
+
+        // If only one version, return it
+        if (versions.length === 1) {
+            return versions[0];
+        }
+
+        // If multiple versions, return the range
+        return `${versions[0]}-${versions[versions.length - 1]}`;
+    } catch (error) {
+        console.error('Error getting package version range:', error);
+        throw new Error('Internal Server Error while getting package version range');
+    }
+};
 
 export const createPackage = async (req: Request, res: Response): Promise<void> => {
     try {
