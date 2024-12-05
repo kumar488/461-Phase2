@@ -13,8 +13,8 @@ const router = Router();
 
 router.post('/', createPackage);
 router.get('/:id', getPackageById);
-router.put('/:id', updatePackage);
-router.delete('/:id', deletePackage); // Extra route
+router.post('/:id', updatePackage);
+// router.delete('/:id', deletePackage); // Extra route
 router.get('/:id/rate', getPackageRate);
 router.get('/:id/cost', getPackageCost);
 router.post('/byRegEx', searchPackagesByRegEx);

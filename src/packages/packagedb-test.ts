@@ -37,10 +37,10 @@ async function testDatabaseFunctions() {
         // Test getPackageByID function
         console.log('Retrieving package...');
         const packageData = await getPackageByID(packageId);
-        if (!packageData || packageData[0].Name !== 'TestPackage') {
+        if (!packageData || packageData.Name !== 'TestPackage') {
             throw new Error(`Failed to retrieve package correctly, got: ${JSON.stringify(packageData)}`);
         }
-        console.log('Package retrieved successfully:', packageData[0]);
+        console.log('Package retrieved successfully:', packageData);
 
         // Test updatePackage function with partial update
         console.log('Updating package...');
@@ -48,13 +48,13 @@ async function testDatabaseFunctions() {
 
         // Confirm update
         const updatedPackage = await getPackageByID(packageId);
-        if (!updatedPackage || updatedPackage[0].Version !== '1.1.0') {
-            throw new Error(`Failed to update package version, got: ${updatedPackage?.[0]?.Version}`);
+        if (!updatedPackage || updatedPackage.Version !== '1.1.0') {
+            throw new Error(`Failed to update package version, got: ${updatedPackage?.Version}`);
         }
-        if (updatedPackage[0].NET_SCORE !== undefined && parseFloat(updatedPackage[0].NET_SCORE.toFixed(3)) !== 0.9) {
-            throw new Error(`Failed to update NET_SCORE, got: ${updatedPackage[0].NET_SCORE}`);
+        if (updatedPackage.NET_SCORE !== undefined && parseFloat(updatedPackage.NET_SCORE.toFixed(3)) !== 0.9) {
+            throw new Error(`Failed to update NET_SCORE, got: ${updatedPackage.NET_SCORE}`);
         }
-        console.log('Package updated successfully:', updatedPackage[0]);
+        console.log('Package updated successfully:', updatedPackage);
 
         // Test deletePackage function
         console.log('Deleting package...');
@@ -62,7 +62,7 @@ async function testDatabaseFunctions() {
 
         // Attempt to retrieve deleted package (expect null or empty result)
         const deletedPackage = await getPackageByID(packageId);
-        if (deletedPackage && deletedPackage.length > 0) {
+        if (deletedPackage) {
             throw new Error('Package was not deleted successfully');
         }
         console.log('Package deleted successfully.');

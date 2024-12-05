@@ -10,6 +10,7 @@ RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDepend
 } from './GitHubAPIcaller';                          
 
 import { getLicense } from './License';
+import semver from 'semver';
 
 export const getGithubURL = async (url: string): Promise<string | null> => {
     if (url.includes('github.com')) {
@@ -92,7 +93,12 @@ export const extractPackageJsonInfo = (packageJson: string): { name: string; ver
 
         const name = parsedJson.name;
         const version = parsedJson.version;
-        const repositoryUrl = parsedJson.repository?.url;
+        let repositoryUrl = parsedJson.repository?.url;
+
+        // Remove .git from the end of the repositoryUrl if it exists
+        if (repositoryUrl?.endsWith('.git')) {
+            repositoryUrl = repositoryUrl.slice(0, -4);
+        }
 
         return { name, version, repositoryUrl };
     } catch (error) {
@@ -223,4 +229,35 @@ export async function calculateScores(githubURL: string): Promise<Record<string,
         throw error;
     }
 }
+
+export const isValidVersion = (existingVersions: string[], newVersion: string): boolean => {
+    // Ensure the new version doesn't already exist
+    if (existingVersions.includes(newVersion)) {
+        return false;
+    }
+
+    // Parse the major and minor versions from the newVersion
+    const { major, minor, patch } = semver.parse(newVersion) || {};
+    if (major === undefined || minor === undefined || patch === undefined) {
+        return false; // Invalid version format
+    }
+
+    // Filter existing versions to only the same major and minor
+    const sameMajorMinorVersions = existingVersions.filter((version) => {
+        const parsedVersion = semver.parse(version);
+        return (
+            parsedVersion?.major === major &&
+            parsedVersion?.minor === minor
+        );
+    });
+
+    // Find the maximum patch version in the same major and minor versions
+    const maxPatch = sameMajorMinorVersions.reduce((max, version) => {
+        const parsedVersion = semver.parse(version);
+        return parsedVersion?.patch !== undefined && parsedVersion.patch > max ? parsedVersion.patch : max;
+    }, -1);
+
+    // Ensure the new patch version is greater than the maximum existing patch
+    return patch > maxPatch;
+};
 

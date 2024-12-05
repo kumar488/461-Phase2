@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export interface PackageData {
+    ID?: number;
     Name?: string;
     Version?: string;
     URL?: string;
@@ -18,6 +19,8 @@ export interface PackageData {
     LICENSE_SCORE?: number;
     PINNED_PRACTICE_SCORE?: number;
     PULL_REQUEST_RATING_SCORE?: number;
+    COST?: number;
+    UPLOADED_BY_URL?: boolean;
   }
 
 export const config = {
@@ -37,14 +40,16 @@ export const tableCreationQuery = `
         URL TEXT NULL,
         Content LONGTEXT NULL,
         JSProgram MEDIUMTEXT NULL,
-        NET_SCORE FLOAT NULL,
-        RAMP_UP_SCORE FLOAT NULL,
-        CORRECTNESS_SCORE FLOAT NULL,
-        BUS_FACTOR_SCORE FLOAT NULL,
-        RESPONSIVE_MAINTAINER_SCORE FLOAT NULL,
-        LICENSE_SCORE INT NULL,
-        PINNED_PRACTICE_SCORE FLOAT NULL,
-        PULL_REQUEST_RATING_SCORE FLOAT NULL
+        NET_SCORE FLOAT DEFAULT -1,
+        RAMP_UP_SCORE FLOAT DEFAULT -1,
+        CORRECTNESS_SCORE FLOAT DEFAULT -1,
+        BUS_FACTOR_SCORE FLOAT DEFAULT -1,
+        RESPONSIVE_MAINTAINER_SCORE FLOAT DEFAULT -1,
+        LICENSE_SCORE INT DEFAULT -1,
+        PINNED_PRACTICE_SCORE FLOAT DEFAULT -1,
+        PULL_REQUEST_RATING_SCORE FLOAT DEFAULT -1,
+        COST FLOAT DEFAULT -1,
+        UPLOADED_BY_URL BOOLEAN DEFAULT FALSE
     );
 `;
 
@@ -222,7 +227,7 @@ export async function getPackageByID(id: number) {
         const query = `SELECT * FROM ${tableName} WHERE ID = ?`;
         const [rows] = await connection.execute(query, [id]);
         logger.info(`Row with ID ${id} retrieved`);
-        return rows as PackageData[];
+        return (rows as PackageData[])[0] || null;
     } catch (err) {
         logger.error('Error retrieving row', err);
         throw err;
@@ -231,6 +236,21 @@ export async function getPackageByID(id: number) {
         logger.info('Connection closed');
     }
 }
+
+export const getPackageVersions = async (packageName: string): Promise<string[]> => {
+    const connection = await createConnection();
+    try {
+        const query = `SELECT Version FROM ${tableName} WHERE Name = ?`;
+        const [rows] = await connection.execute(query, [packageName]);
+        return (rows as any[]).map((row) => row.Version);
+    } catch (err) {
+        logger.error('Error fetching versions', err);
+        throw err;
+    } finally {
+        await connection.end();
+        logger.info('Connection closed');
+    }
+};
 
 export async function resetTable() {
     const connection = await createConnection();
