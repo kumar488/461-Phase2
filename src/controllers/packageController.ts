@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { getAllPackages, getPackage, createPackageModel, deletePackageModel } from '../models/packageModel';
 import { addPackage, getPackageByID, getPackageVersions } from '../packages/packagedb';
 import { Buffer } from 'buffer';
-import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, debloatPackageContent } from '../helper';
+import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, debloatPackageContent, calculateScores, isValidVersion } from '../helper';
 import { getRepositoryRating } from '../main';
 import pool from '../sqlhelper';
 
