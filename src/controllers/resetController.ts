@@ -1,35 +1,16 @@
 import { Request, Response } from 'express';
 import mysql from 'mysql2/promise';
-
-// Default system credentials for resetting the database
-const DEFAULT_DB_CONFIG = {
-
-};
+import { resetTable } from '../packages/packagedb';
 
 export const resetSystem = async (req: Request, res: Response) => {
     try {
-        // Create a connection using the default credentials
-        const connection = await mysql.createConnection(DEFAULT_DB_CONFIG);
-
-        // Begin a transaction
-        await connection.beginTransaction();
-
-        // Delete all rows from the packages table
-        await connection.query('DELETE FROM packages');
-
-        // Delete all users except the default user
-        await connection.query('DELETE FROM users WHERE username != ?', ['default_user']);
-
-        // Insert or reset the default user (assuming username is 'default_user')
-        await connection.query(`
-            INSERT INTO users (username, password)
-            VALUES ('default_user', 'default_password')
-            ON DUPLICATE KEY UPDATE password='default_password';
-        `);
-
-        // Commit the transaction
-        await connection.commit();
-        await connection.end();
+        const token = req.headers['x-authorization'] as string;
+        if (!token) {
+            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+            return;
+        }
+        
+        await resetTable();
 
         res.status(200).json({ message: 'System reset to default state successfully' });
     } catch (error) {

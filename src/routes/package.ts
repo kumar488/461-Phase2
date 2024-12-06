@@ -3,7 +3,6 @@ import {
     createPackage, 
     getPackageById, 
     updatePackage, 
-    deletePackage, 
     getPackageRate,
     getPackageCost, 
     searchPackagesByRegEx 
@@ -14,7 +13,6 @@ const router = Router();
 router.post('/', createPackage);
 router.get('/:id', getPackageById);
 router.post('/:id', updatePackage);
-// router.delete('/:id', deletePackage); // Extra route
 router.get('/:id/rate', getPackageRate);
 router.get('/:id/cost', getPackageCost);
 router.post('/byRegEx', searchPackagesByRegEx);
