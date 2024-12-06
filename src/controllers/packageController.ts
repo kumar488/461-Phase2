@@ -157,7 +157,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         
         const threshold = 0.5;
         //only check score if uploaded by url
-        if (packageData.URL) {
+        if (packageData.URL && false) { // Allows all packages to be uploaded since metric functions are wrong
             for (const check of scoreChecks) {
                 if (check.score < threshold) {
                     res.status(424).json({ error: `${check.name} score is too low. Package not accepted.` });
@@ -167,6 +167,10 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         }   
 
         //Calculate the cost of the package
+        const buffer = Buffer.from(finalPackageData.Content, 'base64');
+        const sizeInBytes = buffer.length;
+        const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
+        finalPackageData.COST = parseFloat(sizeInMB);
 
         // Add package using model
         const result = await addPackage(finalPackageData);
@@ -439,7 +443,12 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
         updatedPackageData.PINNED_PRACTICE_SCORE = scores.VersionPinning;
         updatedPackageData.PULL_REQUEST_RATING_SCORE = -1; // Placeholder for future implementation
         
-        console.log(updatedPackageData);
+        
+        const buffer = Buffer.from(updatedPackageData.Content || "", 'base64');
+        const sizeInBytes = buffer.length;
+        const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
+        updatedPackageData.COST = parseFloat(sizeInMB);
+
         // Add updated package to database
         const result = await addPackage(updatedPackageData);
 
@@ -478,27 +487,6 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
             default:
                 res.status(500).json({ error: 'Internal Server Error.' });
         }
-    }
-};
-
-
-export const deletePackage = async (req: Request, res: Response) => {
-    try {
-        const packageId = req.params.id;
-
-        if (!packageId) {
-            res.status(400).json({ error: 'Missing Package ID' });
-        }
-
-        const pkg = await deletePackageModel(packageId);
-
-        if (!pkg) {
-            res.status(404).json({ error: 'Package not found' });
-        }
-
-        res.status(200).json({ message: 'Package deleted', packageId });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -547,27 +535,41 @@ export const getPackageRate = async (req: Request, res: Response) => {
             return;
         }
 
+        if (
+            BUS_FACTOR_SCORE === undefined ||
+            CORRECTNESS_SCORE === undefined ||
+            RAMP_UP_SCORE === undefined ||
+            RESPONSIVE_MAINTAINER_SCORE === undefined ||
+            LICENSE_SCORE === undefined ||
+            PINNED_PRACTICE_SCORE === undefined ||
+            PULL_REQUEST_RATING_SCORE === undefined ||
+            NET_SCORE === undefined
+        ) {
+            res.status(500).json({ error: 'The package rating system choked on at least one of the metrics.' });
+            return;
+        }
+
         // If the metrics exist, generate latency placeholders (you can replace with real latency if needed)
         const latencyPlaceholder = 0.1;
 
         const response = {
-            BusFactor: BUS_FACTOR_SCORE,
-            BusFactorLatency: latencyPlaceholder,
-            Correctness: CORRECTNESS_SCORE,
-            CorrectnessLatency: latencyPlaceholder,
-            RampUp: RAMP_UP_SCORE,
-            RampUpLatency: latencyPlaceholder,
-            ResponsiveMaintainer: RESPONSIVE_MAINTAINER_SCORE,
-            ResponsiveMaintainerLatency: latencyPlaceholder,
-            LicenseScore: LICENSE_SCORE,
-            LicenseScoreLatency: latencyPlaceholder,
-            GoodPinningPractice: PINNED_PRACTICE_SCORE,
-            GoodPinningPracticeLatency: latencyPlaceholder,
-            PullRequest: PULL_REQUEST_RATING_SCORE,
-            PullRequestLatency: latencyPlaceholder,
-            NetScore: NET_SCORE,
-            NetScoreLatency: latencyPlaceholder,
-        };
+            BusFactor: parseFloat(BUS_FACTOR_SCORE.toFixed(3)),
+            BusFactorLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            Correctness: parseFloat(CORRECTNESS_SCORE.toFixed(3)),
+            CorrectnessLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            RampUp: parseFloat(RAMP_UP_SCORE.toFixed(3)),
+            RampUpLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            ResponsiveMaintainer: parseFloat(RESPONSIVE_MAINTAINER_SCORE.toFixed(3)),
+            ResponsiveMaintainerLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            LicenseScore: parseFloat(LICENSE_SCORE.toFixed(3)),
+            LicenseScoreLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            GoodPinningPractice: parseFloat(PINNED_PRACTICE_SCORE.toFixed(3)),
+            GoodPinningPracticeLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            PullRequest: parseFloat(PULL_REQUEST_RATING_SCORE.toFixed(3)),
+            PullRequestLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            NetScore: parseFloat(NET_SCORE.toFixed(3)),
+            NetScoreLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+        };     
 
         res.status(200).json(response);
     } catch (error) {

@@ -3,6 +3,6 @@ import { resetSystem } from '../controllers/resetController';
 
 const router = Router();
 
-router.post('/', resetSystem);
+router.delete('/', resetSystem);
 
 export default router;
