@@ -35,13 +35,14 @@ const githubToken = process.env.GITHUB_TOKEN;
 // import fetch/print functions and interfaces
 import calculateNetScore, { calculateBusFactorScore, calculateCorrectness,
                             calculateRampUpScore, calculateResponsiveMaintainerScore,
-                            calculateVersionPinning
+                            calculateVersionPinning, calculatePullRequestReviewFraction
                           } from './CalculateMetrics';
 
 import  { fetchRepositoryInfo, fetchRepositoryUsers, fetchRepositoryIssues,
           RepositoryInfo, RepositoryIssues, RepositoryUsers,
           getNpmPackageGithubRepo, fetchRepositoryDependencies,
-          RepositoryDependencies
+          RepositoryDependencies,
+          RepositoryResponse, fetchPullRequests
         } from './GitHubAPIcaller';                          
 
 import { getLicense } from './License';
@@ -199,6 +200,7 @@ export async function getRepositoryRating(url: string): Promise<string> {
     const repoIssues: RepositoryIssues = await fetchRepositoryIssues(owner, repository);
     const repoUsers: RepositoryUsers = await fetchRepositoryUsers(owner, repository);
     const repoDependencies: RepositoryDependencies = await fetchRepositoryDependencies(owner, repository);
+    const repoResponse: RepositoryResponse = await fetchPullRequests(owner, repository);
 
     start = performance.now();
     const busFactor = calculateBusFactorScore(repoUsers);
@@ -225,11 +227,16 @@ export async function getRepositoryRating(url: string): Promise<string> {
     end = performance.now();
     const versionPinningLatency = ((end - start) / 1000).toFixed(3);
 
-    const netScore = calculateNetScore(busFactor, correctness, responsiveMaintainer, rampUp, foundLicense, versionPinning);
+    start = performance.now();
+    const pullRequest = calculatePullRequestReviewFraction(repoResponse);
+    end = performance.now();
+    const pullRequestLatency = ((end - start) / 1000).toFixed(3);
+
+    const netScore = calculateNetScore(busFactor, correctness, responsiveMaintainer, rampUp, foundLicense, versionPinning, pullRequest);
     let netScoreEnd: number = performance.now();
     const netScoreLatency = ((netScoreEnd - netScoreStart) / 1000).toFixed(3);
 
-    const output_string = `{"URL":"${url}", "NetScore":${netScore}, "NetScore_Latency": ${netScoreLatency}, "RampUp":${rampUp}, "RampUp_Latency": ${rampUpLatency}, "Correctness":${correctness}, "Correctness_Latency":${correctnessLatency}, "BusFactor":${busFactor}, "BusFactor_Latency": ${busFactorLatency}, "ResponsiveMaintainer":${responsiveMaintainer}, "ResponsiveMaintainer_Latency": ${responsiveMaintainerLatency}, "VersionPinning": ${versionPinning}, "VersionPinning_Latency": ${versionPinningLatency}, "License":${foundLicense}, "License_Latency": ${foundLicenseLatency}}`;
+    const output_string = `{"URL":"${url}", "NetScore":${netScore}, "NetScore_Latency": ${netScoreLatency}, "RampUp":${rampUp}, "RampUp_Latency": ${rampUpLatency}, "Correctness":${correctness}, "Correctness_Latency":${correctnessLatency}, "BusFactor":${busFactor}, "BusFactor_Latency": ${busFactorLatency}, "ResponsiveMaintainer":${responsiveMaintainer}, "ResponsiveMaintainer_Latency": ${responsiveMaintainerLatency}, "VersionPinning": ${versionPinning}, "VersionPinning_Latency": ${versionPinningLatency}, "License":${foundLicense}, "License_Latency": ${foundLicenseLatency}, "PullRequest": ${pullRequest}, "PullRequest_Latency": ${pullRequestLatency}}`;
 
     return output_string;
   } catch (error) {
