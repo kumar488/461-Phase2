@@ -7,7 +7,8 @@ export const getPackages = async (req: Request, res: Response) => {
 
         // Authentication check
         if (!authorizationHeader) {
-            return res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+            return;
         }
 
         const packageQueries = req.body;
@@ -15,7 +16,8 @@ export const getPackages = async (req: Request, res: Response) => {
 
         // Validate the request body
         if (!Array.isArray(packageQueries) || packageQueries.length === 0) {
-            return res.status(400).json({ error: 'Request body must be a non-empty array of PackageQuery objects.' });
+            res.status(400).json({ error: 'Request body must be a non-empty array of PackageQuery objects.' });
+            return;
         }
 
         // SQL query construction based on the packageQueries
@@ -23,7 +25,7 @@ export const getPackages = async (req: Request, res: Response) => {
         const queryConditions: string[] = [];
         const queryValues: any[] = [];
 
-        packageQueries.forEach((packageQuery) => {
+        packageQueries.forEach((packageQuery: any) => {
             if (packageQuery.Name) {
                 queryConditions.push('name LIKE ?');
                 queryValues.push(packageQuery.Name === '*' ? '%' : `%${packageQuery.Name}%`);
@@ -35,7 +37,8 @@ export const getPackages = async (req: Request, res: Response) => {
         });
 
         if (queryConditions.length === 0) {
-            return res.status(400).json({ error: 'PackageQuery must include at least one field: Name or Version.' });
+            res.status(400).json({ error: 'PackageQuery must include at least one field: Name or Version.' });
+            return;
         }
 
         query += queryConditions.join(' AND ');
@@ -43,14 +46,15 @@ export const getPackages = async (req: Request, res: Response) => {
         queryValues.push(offset);
 
         // Execute the query
-        const [rows, fields]: [any[], any[]] = await pool.query(query, queryValues);
+        const [rows]: [any[], any] = await pool.query(query, queryValues);
 
         if (rows.length > 10) {
-            return res.status(413).json({ error: 'Too many packages returned.' });
+            res.status(413).json({ error: 'Too many packages returned.' });
+            return;
         }
 
         // Format the response
-        res.setHeader('offset', offset + rows.length);
+        res.setHeader('offset', (offset + rows.length).toString());
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching packages:', error);
