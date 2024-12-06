@@ -1,82 +1,59 @@
 import { Request, Response } from 'express';
-import mysql from 'mysql2/promise';
+import pool from '../sqlhelper';
 
-// Create MySQL connection pool
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME
-});
-
-// Maximum number of packages that can be returned in a single request
-const MAX_PACKAGES_LIMIT = 10;
-
-// Get the list of packages from the registry
 export const getPackages = async (req: Request, res: Response) => {
     try {
-        // Extract request header and body
         const authorizationHeader = req.headers['x-authorization'];
-        const packageQueries = req.body; // Expecting an array of queries
-        const offset = parseInt(req.query.offset as string) || 0;
 
-        // Check if authorization header is provided
+        // Authentication check
         if (!authorizationHeader) {
             return res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
         }
 
+        const packageQueries = req.body;
+        const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
         // Validate the request body
         if (!Array.isArray(packageQueries) || packageQueries.length === 0) {
-            return res.status(400).json({ error: 'Invalid PackageQuery or missing fields' });
+            return res.status(400).json({ error: 'Request body must be a non-empty array of PackageQuery objects.' });
         }
 
-        // Extract query criteria - assuming only one query with "name" as key for now
-        const packageQuery = packageQueries[0];
-        const packageName = packageQuery.name;
+        // SQL query construction based on the packageQueries
+        let query = 'SELECT * FROM packages WHERE ';
+        const queryConditions: string[] = [];
+        const queryValues: any[] = [];
 
-        if (!packageName) {
-            return res.status(400).json({ error: 'PackageQuery must include a valid package name' });
+        packageQueries.forEach((packageQuery) => {
+            if (packageQuery.Name) {
+                queryConditions.push('name LIKE ?');
+                queryValues.push(packageQuery.Name === '*' ? '%' : `%${packageQuery.Name}%`);
+            }
+            if (packageQuery.Version) {
+                queryConditions.push('version = ?');
+                queryValues.push(packageQuery.Version);
+            }
+        });
+
+        if (queryConditions.length === 0) {
+            return res.status(400).json({ error: 'PackageQuery must include at least one field: Name or Version.' });
         }
 
-        // If too many packages are requested, respond with 413
-        if (packageQueries.length > MAX_PACKAGES_LIMIT) {
-            return res.status(413).json({ error: 'Too many packages requested. Maximum limit is ' + MAX_PACKAGES_LIMIT });
+        query += queryConditions.join(' AND ');
+        query += ' LIMIT 10 OFFSET ?';
+        queryValues.push(offset);
+
+        // Execute the query
+        const [rows, fields]: [any[], any[]] = await pool.query(query, queryValues);
+
+        if (rows.length > 10) {
+            return res.status(413).json({ error: 'Too many packages returned.' });
         }
 
-        // SQL query - search for packages fitting the query
-        let sqlQuery = 'SELECT id, name, version FROM packages';
-        const queryParams: any[] = [];
-
-        if (packageName !== '*') {
-            sqlQuery += ' WHERE name LIKE ?';
-            queryParams.push(packageName);
-        }
-
-        sqlQuery += ' LIMIT ? OFFSET ?';
-        queryParams.push(MAX_PACKAGES_LIMIT, offset);
-
-        // Execute the SQL query
-        const [rows]: any = await pool.query(sqlQuery, queryParams);
-
-        if (rows.length === 0) {
-            return res.status(200).json([]); // Empty list if no packages found
-        }
-
-        // Format the response to match the expected schema
-        const packages = rows.map((row: any) => ({
-            ID: row.id,
-            Name: row.name,
-            Version: row.version
-        }));
-
-        // Include the offset for pagination in response headers
-        res.set('offset', String(offset + MAX_PACKAGES_LIMIT));
-
-        // Return the list of packages
-        res.status(200).json(packages);
+        // Format the response
+        res.setHeader('offset', offset + rows.length);
+        res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching packages:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
-
