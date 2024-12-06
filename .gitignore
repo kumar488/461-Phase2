@@ -6,3 +6,9 @@ node_modules/.package-lock.json
 src/*.js
 logs/
 coverage/
+src/packages/*.js
+genapi/
+dist/
+__tests__/*.js
+__tests__/*.js.map
+clonedGitRepos/

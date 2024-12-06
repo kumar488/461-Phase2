@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export interface PackageData {
+    ID?: number;
     Name?: string;
     Version?: string;
     URL?: string;
@@ -18,6 +19,8 @@ export interface PackageData {
     LICENSE_SCORE?: number;
     PINNED_PRACTICE_SCORE?: number;
     PULL_REQUEST_RATING_SCORE?: number;
+    COST?: number;
+    UPLOADED_BY_URL?: boolean;
   }
 
 export const config = {
@@ -37,14 +40,16 @@ export const tableCreationQuery = `
         URL TEXT NULL,
         Content LONGTEXT NULL,
         JSProgram MEDIUMTEXT NULL,
-        NET_SCORE FLOAT NULL,
-        RAMP_UP_SCORE FLOAT NULL,
-        CORRECTNESS_SCORE FLOAT NULL,
-        BUS_FACTOR_SCORE FLOAT NULL,
-        RESPONSIVE_MAINTAINER_SCORE FLOAT NULL,
-        LICENSE_SCORE INT NULL,
-        PINNED_PRACTICE_SCORE FLOAT NULL,
-        PULL_REQUEST_RATING_SCORE FLOAT NULL
+        NET_SCORE FLOAT DEFAULT -1,
+        RAMP_UP_SCORE FLOAT DEFAULT -1,
+        CORRECTNESS_SCORE FLOAT DEFAULT -1,
+        BUS_FACTOR_SCORE FLOAT DEFAULT -1,
+        RESPONSIVE_MAINTAINER_SCORE FLOAT DEFAULT -1,
+        LICENSE_SCORE INT DEFAULT -1,
+        PINNED_PRACTICE_SCORE FLOAT DEFAULT -1,
+        PULL_REQUEST_RATING_SCORE FLOAT DEFAULT -1,
+        COST FLOAT DEFAULT -1,
+        UPLOADED_BY_URL BOOLEAN DEFAULT FALSE
     );
 `;
 
@@ -104,47 +109,46 @@ export async function createDatabase() {
 export async function addPackage(packageData: PackageData) {
     const connection = await createConnection();
     try {
-      // Extract fields and values from packageData
+      // Check for duplicate package (by Name and Version)
+      const [rows] = await connection.execute(
+        `SELECT COUNT(*) as count FROM ${tableName} WHERE Name = ? AND Version = ?`,
+        [packageData.Name, packageData.Version]
+      );
+      const count = (rows as any)[0]?.count || 0;
+      if (count > 0) {
+        throw { code: 409, message: 'Package already exists' };
+      }
+  
+      // Include rate checking here
+  
+      // Insert the package
       const fields: string[] = [];
       const values: (string | number)[] = [];
       const placeholders: string[] = [];
-  
       for (const key in packageData) {
-        if (packageData[key as keyof PackageData] !== undefined) { // Only include provided fields
+        if (packageData[key as keyof PackageData] !== undefined) {
           fields.push(key);
           values.push(packageData[key as keyof PackageData] as string | number);
           placeholders.push('?');
         }
       }
   
-      // Ensure there's something to insert
-      if (fields.length === 0) {
-        throw new Error('No fields provided to insert');
-      }
-  
-      // Build the query dynamically
-      const query = `
-        INSERT INTO ${tableName} 
-        (${fields.join(', ')})
-        VALUES (${placeholders.join(', ')})
-      `;
-  
-      // Execute the query and get the result
+      const query = `INSERT INTO ${tableName} (${fields.join(', ')}) VALUES (${placeholders.join(', ')})`;
       const [result] = await connection.execute(query, values);
   
-      // Assuming ID is auto-incremented, we retrieve it from insertId
       const insertedId = (result as any).insertId;
-      logger.info(`Row added to table with ID ${insertedId}`);
+      logger.info(`New row added to table with ID ${insertedId}`);
   
-      return insertedId;
-    } catch (err) {
+      return { id: insertedId };
+    } catch (err: any) {
+      if (err.code) throw err; // Custom error codes
       logger.error('Error adding row to table', err);
-      throw err;
+      throw { code: 500, message: 'Internal Server Error' }; // General server error
     } finally {
       await connection.end();
       logger.info('Connection closed');
     }
-  }
+}
 
 export async function deletePackage(id: number) {
     const connection = await createConnection();
@@ -223,7 +227,7 @@ export async function getPackageByID(id: number) {
         const query = `SELECT * FROM ${tableName} WHERE ID = ?`;
         const [rows] = await connection.execute(query, [id]);
         logger.info(`Row with ID ${id} retrieved`);
-        return rows as PackageData[];
+        return (rows as PackageData[])[0] || null;
     } catch (err) {
         logger.error('Error retrieving row', err);
         throw err;
@@ -232,6 +236,21 @@ export async function getPackageByID(id: number) {
         logger.info('Connection closed');
     }
 }
+
+export const getPackageVersions = async (packageName: string): Promise<string[]> => {
+    const connection = await createConnection();
+    try {
+        const query = `SELECT Version FROM ${tableName} WHERE Name = ?`;
+        const [rows] = await connection.execute(query, [packageName]);
+        return (rows as any[]).map((row) => row.Version);
+    } catch (err) {
+        logger.error('Error fetching versions', err);
+        throw err;
+    } finally {
+        await connection.end();
+        logger.info('Connection closed');
+    }
+};
 
 export async function resetTable() {
     const connection = await createConnection();
