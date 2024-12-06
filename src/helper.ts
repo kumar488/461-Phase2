@@ -5,7 +5,7 @@ import calculateNetScore, { calculateBusFactorScore, calculateCorrectness,
     calculateRampUpScore, calculateResponsiveMaintainerScore, calculateVersionPinning, calculatePullRequestReviewFraction
   } from './CalculateMetrics';
 
-import  {fetchRepositoryUsers, fetchRepositoryIssues, fetchPullRequests, RepositoryResponse
+import  {fetchRepositoryUsers, fetchRepositoryIssues, fetchPullRequests, RepositoryResponse,
 RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies
 } from './GitHubAPIcaller';                          
 
