@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { getAllPackages, getPackage, createPackageModel, deletePackageModel } from '../models/packageModel';
-import { addPackage, getPackageByID, getPackageVersions } from '../packages/packagedb';
+import { addPackage, getPackageByID, getPackageVersions, getAllPackages } from '../packages/packagedb';
 import { Buffer } from 'buffer';
-import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, extractPackageJsonInfo, debloatPackageContent, calculateScores, isValidVersion } from '../helper';
+import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, 
+    extractPackageJsonInfo, debloatPackageContent, calculateScores, isValidVersion,
+    extractReadmeFromContent } from '../helper';
 import { getRepositoryRating } from '../main';
 import pool from '../sqlhelper';
 
@@ -37,20 +38,20 @@ export const getPackageVersionRange = async (packageName: string): Promise<strin
 export const createPackage = async (req: Request, res: Response): Promise<void> => {
     try {
         // Verify authorization header
-        const token = req.headers['x-authorization'] as string;
-        if (!token) {
-            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
-            return;
-        }
+        // const token = req.headers['x-authorization'] as string;
+        // if (!token) {
+        //     res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+        //     return;
+        // }
 
         // Extract package data
         const packageData = req.body;
 
         // Validate input fields
-        if (!packageData.JSProgram) {
-            res.status(400).json({ error: 'Missing required field: JSProgram' });
-            return;
-        }
+        // if (!packageData.JSProgram) {
+        //     res.status(400).json({ error: 'Missing required field: JSProgram' });
+        //     return;
+        // }
 
         if (!packageData.Content && !packageData.URL) {
             res.status(400).json({ error: 'Either Content or URL must be provided.' });
@@ -220,11 +221,11 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
 export const getPackageById = async (req: Request, res: Response) => {
     try {
         // Verify authorization header
-        const token = req.headers['x-authorization'] as string;
-        if (!token) {
-            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
-            return;
-        }
+        // const token = req.headers['x-authorization'] as string;
+        // if (!token) {
+        //     res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+        //     return;
+        // }
 
         // Extract package ID from path parameters
         const packageId = req.params.id;
@@ -241,7 +242,7 @@ export const getPackageById = async (req: Request, res: Response) => {
         }
 
         // Ensure required fields are present
-        if (!pkg.Content || !pkg.JSProgram || !pkg.Name || !pkg.Version) {
+        if (!pkg.Content || !pkg.Name || !pkg.Version) { //removed pkg.JSProgram
             res.status(400).json({ error: 'Package data is incomplete or invalid.' });
             return;
         }
@@ -275,11 +276,11 @@ export const getPackageById = async (req: Request, res: Response) => {
 export const updatePackage = async (req: Request, res: Response): Promise<void> => {
     try {
         // Verify authorization header
-        const token = req.headers['x-authorization'] as string;
-        if (!token) {
-            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
-            return;
-        }
+        // const token = req.headers['x-authorization'] as string;
+        // if (!token) {
+        //     res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+        //     return;
+        // }
 
         const packageId = parseInt(req.params.id, 10);
 
@@ -302,10 +303,10 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
             return;
         }
 
-        if (!data.JSProgram) {
-            res.status(400).json({ error: 'Missing required field: JSProgram in data.' });
-            return;
-        }
+        // if (!data.JSProgram) {
+        //     res.status(400).json({ error: 'Missing required field: JSProgram in data.' });
+        //     return;
+        // }
 
         if (!data.Content && !data.URL) {
             res.status(400).json({ error: 'Either Content or URL must be provided in data.' });
@@ -492,11 +493,11 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
 
 export const getPackageRate = async (req: Request, res: Response) => {
     try {
-        const token = req.headers['x-authorization'] as string;
-        if (!token) {
-            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
-            return;
-        }
+        // const token = req.headers['x-authorization'] as string;
+        // if (!token) {
+        //     res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+        //     return;
+        // }
 
         const packageId = parseInt(req.params.id, 10);
         if (isNaN(packageId)) {
@@ -593,17 +594,59 @@ export const getPackageCost = (req: Request, res: Response) => {
     }
 };
 
-export const searchPackagesByRegEx = (req: Request, res: Response) => {
+export const searchPackagesByRegEx = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { regex } = req.body;
+        const { RegEx } = req.body;
 
-        if (!regex) {
+        if (!RegEx) {
             res.status(400).json({ error: 'Missing required field: regex' });
+            return;
         }
 
-        // Logic to search for packages based on regex
-        res.status(200).json({ packages: [] });
+        let parsedRegex: RegExp;
+        try {
+            parsedRegex = new RegExp(RegEx, 'i'); // Case-insensitive regex
+        } catch (error) {
+            res.status(400).json({ error: 'Invalid regex format' });
+            return;
+        }
+
+        // Retrieve all packages from the database
+        const allPackages = await getAllPackages();
+
+        if (!allPackages || allPackages.length === 0) {
+            res.status(404).json({ error: 'No packages found in the database' });
+            return;
+        }
+        
+        const packageLimit = 10;
+        const matchingPackages = [];
+        for (const pkg of allPackages) {
+            const readmeContent = pkg.Content ? extractReadmeFromContent(pkg.Content) : null;
+
+            if (parsedRegex.test(pkg.Name) || (readmeContent && parsedRegex.test(readmeContent))) {
+                matchingPackages.push({
+                    Name: pkg.Name,
+                    Version: pkg.Version,
+                    ID: pkg.ID,
+                });
+
+                // Stop once we reach the limit of 10
+                if (matchingPackages.length >= packageLimit) {
+                    break;
+                }
+            }
+        }
+
+        if (matchingPackages.length === 0) {
+            res.status(404).json({ error: 'No packages matched the provided regex' });
+            return;
+        }
+
+        // Return the matching packages
+        res.status(200).json(matchingPackages);
     } catch (error) {
+        console.error('Error in searchPackagesByRegEx:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };

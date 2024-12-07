@@ -4,11 +4,11 @@ import { resetTable } from '../packages/packagedb';
 
 export const resetSystem = async (req: Request, res: Response) => {
     try {
-        const token = req.headers['x-authorization'] as string;
-        if (!token) {
-            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
-            return;
-        }
+        // const token = req.headers['x-authorization'] as string;
+        // if (!token) {
+        //     res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
+        //     return;
+        // }
         
         await resetTable();
 

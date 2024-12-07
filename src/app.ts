@@ -24,7 +24,7 @@ app.use((req, res, next) => {
 
     // Write logs to a file
     logger.info(logString);
-    // console.log(logString);
+    console.log(logString);
 
     next(); // Pass control to the next middleware/route handler
 });

@@ -10,11 +10,11 @@ import {
 
 const router = Router();
 
+router.post('/byRegEx', searchPackagesByRegEx);
 router.post('/', createPackage);
 router.get('/:id', getPackageById);
 router.post('/:id', updatePackage);
 router.get('/:id/rate', getPackageRate);
 router.get('/:id/cost', getPackageCost);
-router.post('/byRegEx', searchPackagesByRegEx);
 
 export default router;

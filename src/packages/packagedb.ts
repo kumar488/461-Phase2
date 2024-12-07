@@ -265,3 +265,21 @@ export async function resetTable() {
         logger.info('Connection closed');
     }
 }
+
+interface PackageInfo {
+    Name: string;
+    Version: string;
+    ID: string;
+    Content?: string;
+}
+
+export const getAllPackages = async (): Promise<PackageInfo[]> => {
+    const connection = await createConnection();
+    try {
+        const query = `SELECT Name, Version, ID, Content FROM ${tableName}`;
+        const [rows] = await connection.execute(query);
+        return rows as PackageInfo[];
+    } finally {
+        await connection.end();
+    }
+};
