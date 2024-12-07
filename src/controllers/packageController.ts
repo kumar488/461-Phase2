@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { addPackage, getPackageByID, getPackageVersions, getAllPackages } from '../packages/packagedb';
+import { addPackage, getPackageByID, getPackageVersions, getAllPackages, getPackageByName } from '../packages/packagedb';
 import { Buffer } from 'buffer';
 import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, 
     extractPackageJsonInfo, debloatPackageContent, calculateScores, isValidVersion,
@@ -235,7 +235,12 @@ export const getPackageById = async (req: Request, res: Response) => {
         }
 
         // Fetch package by ID
-        const pkg = await getPackageByID(Number(packageId));
+        let pkg = await getPackageByID(Number(packageId));
+        if (!pkg) {
+            // Attempt to fetch package by name if not found by ID
+            pkg = await getPackageByName(packageId);
+        }
+
         if (!pkg) {
             res.status(404).json({ error: 'Package does not exist.' });
             return;
@@ -522,7 +527,7 @@ export const getPackageRate = async (req: Request, res: Response) => {
             NET_SCORE,
         } = packageData;
 
-        if (
+        if (false && ( //all all packages to send rating
             BUS_FACTOR_SCORE === -1 ||
             RAMP_UP_SCORE === -1 ||
             CORRECTNESS_SCORE === -1 ||
@@ -530,7 +535,7 @@ export const getPackageRate = async (req: Request, res: Response) => {
             LICENSE_SCORE === -1 ||
             PINNED_PRACTICE_SCORE === -1 ||
             PULL_REQUEST_RATING_SCORE === -1 ||
-            NET_SCORE === -1
+            NET_SCORE === -1)
         ) {
             res.status(500).json({ error: 'The package rating system choked on at least one of the metrics.' });
             return;
