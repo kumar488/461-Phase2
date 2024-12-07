@@ -4,14 +4,7 @@ import semver from 'semver'; // For semantic versioning logic
 
 export const getPackages = async (req: Request, res: Response) => {
     try {
-        const authorizationHeader = req.headers['x-authorization'];
-
-        // Authentication check
-        if (!authorizationHeader) {
-            res.status(403).json({ error: 'Authentication failed due to invalid or missing AuthenticationToken.' });
-            return;
-        }
-
+        // Extract package queries and offset
         const packageQueries = req.body;
         const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
@@ -21,10 +14,12 @@ export const getPackages = async (req: Request, res: Response) => {
             return;
         }
 
-        let query = 'SELECT * FROM packages WHERE ';
+        // Initialize query construction
+        let query = 'SELECT name, id, version FROM packages WHERE ';
         const queryConditions: string[] = [];
         const queryValues: any[] = [];
 
+        // Build query conditions based on the package queries
         packageQueries.forEach((packageQuery: any) => {
             if (packageQuery.Name) {
                 queryConditions.push('name LIKE ?');
@@ -38,8 +33,6 @@ export const getPackages = async (req: Request, res: Response) => {
                 if (/^\d+\.\d+\.\d+-\d+\.\d+\.\d+$/.test(versionConstraint)) {
                     versionConstraint = versionConstraint.replace('-', ' - ');
                 }
-
-                console.log(`Normalized version constraint: ${versionConstraint}`);
 
                 if (semver.valid(versionConstraint)) {
                     // Exact version
@@ -68,11 +61,13 @@ export const getPackages = async (req: Request, res: Response) => {
             }
         });
 
+        // Ensure at least one condition is present
         if (queryConditions.length === 0) {
             res.status(400).json({ error: 'PackageQuery must include at least the "Name" field.' });
             return;
         }
 
+        // Construct the final query
         query += queryConditions.join(' AND ');
         query += ' LIMIT 10 OFFSET ?';
         queryValues.push(offset);
@@ -85,9 +80,15 @@ export const getPackages = async (req: Request, res: Response) => {
 
         console.log('Fetched rows:', rows);
 
-        res.status(200).json(rows);
+        // Return the filtered results
+        res.status(200).json(rows.map(row => ({
+            Version: row.version,
+            Name: row.name,
+            ID: row.id,
+        })));
     } catch (error) {
         console.error('Error fetching packages:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
