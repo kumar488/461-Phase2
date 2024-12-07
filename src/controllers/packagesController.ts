@@ -72,13 +72,13 @@ export const getPackages = async (req: Request, res: Response) => {
         query += ' LIMIT 10 OFFSET ?';
         queryValues.push(offset);
 
-        console.log('Generated SQL Query:', query);
-        console.log('Query Values:', queryValues);
+        //console.log('Generated SQL Query:', query);
+        //console.log('Query Values:', queryValues);
 
         // Execute the query
         const [rows]: [any[], any] = await pool.query(query, queryValues);
 
-        console.log('Fetched rows:', rows);
+        // console.log('Fetched rows:', rows);
 
         // Return the filtered results
         res.status(200).json(rows.map(row => ({
@@ -87,7 +87,7 @@ export const getPackages = async (req: Request, res: Response) => {
             ID: row.id,
         })));
     } catch (error) {
-        console.error('Error fetching packages:', error);
+        //console.error('Error fetching packages:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
