@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../sqlhelper';
-import semver from 'semver'; // Importing semver for version range handling
+import semver from 'semver'; // For semantic versioning logic
 
 export const getPackages = async (req: Request, res: Response) => {
     try {
@@ -21,7 +21,6 @@ export const getPackages = async (req: Request, res: Response) => {
             return;
         }
 
-        // SQL query construction based on the packageQueries
         let query = 'SELECT * FROM packages WHERE ';
         const queryConditions: string[] = [];
         const queryValues: any[] = [];
@@ -31,29 +30,46 @@ export const getPackages = async (req: Request, res: Response) => {
                 queryConditions.push('name LIKE ?');
                 queryValues.push(packageQuery.Name === '*' ? '%' : `%${packageQuery.Name}%`);
             }
-            if (packageQuery.Version) {
-                const version = packageQuery.Version;
 
-                if (semver.valid(version)) {
+            if (packageQuery.Version) {
+                let versionConstraint = packageQuery.Version;
+
+                // Normalize the version range by adding spaces around the hyphen if necessary
+                if (/^\d+\.\d+\.\d+-\d+\.\d+\.\d+$/.test(versionConstraint)) {
+                    versionConstraint = versionConstraint.replace('-', ' - ');
+                }
+
+                console.log(`Normalized version constraint: ${versionConstraint}`);
+
+                if (semver.valid(versionConstraint)) {
                     // Exact version
                     queryConditions.push('version = ?');
-                    queryValues.push(version);
-                } else if (semver.validRange(version)) {
-                    // Bounded range, caret, tilde
-                    queryConditions.push('version BETWEEN ? AND ?');
-                    const range = semver.minVersion(version);
-                    if (range) {
-                        queryValues.push(range.version, version);
+                    queryValues.push(versionConstraint);
+                } else if (semver.validRange(versionConstraint)) {
+                    // Version range
+                    const minVersion = semver.minVersion(versionConstraint)?.version;
+                    const maxVersion = semver.maxSatisfying(
+                        ['9999.9999.9999'], // High max placeholder
+                        versionConstraint
+                    );
+
+                    if (minVersion) {
+                        queryConditions.push('version >= ?');
+                        queryValues.push(minVersion);
+                    }
+                    if (maxVersion) {
+                        queryConditions.push('version <= ?');
+                        queryValues.push(maxVersion);
                     }
                 } else {
-                    res.status(400).json({ error: 'Invalid version format.' });
+                    res.status(400).json({ error: `Invalid version constraint: ${versionConstraint}` });
                     return;
                 }
             }
         });
 
         if (queryConditions.length === 0) {
-            res.status(400).json({ error: 'PackageQuery must include at least one field: Name or Version.' });
+            res.status(400).json({ error: 'PackageQuery must include at least the "Name" field.' });
             return;
         }
 
@@ -61,16 +77,14 @@ export const getPackages = async (req: Request, res: Response) => {
         query += ' LIMIT 10 OFFSET ?';
         queryValues.push(offset);
 
+        console.log('Generated SQL Query:', query);
+        console.log('Query Values:', queryValues);
+
         // Execute the query
         const [rows]: [any[], any] = await pool.query(query, queryValues);
 
-        if (rows.length > 10) {
-            res.status(413).json({ error: 'Too many packages returned.' });
-            return;
-        }
+        console.log('Fetched rows:', rows);
 
-        // Format the response
-        res.setHeader('offset', (offset + rows.length).toString());
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching packages:', error);
