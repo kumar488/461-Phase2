@@ -420,7 +420,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 }
 
                 updatedPackageData.Content = base64Content;
-                updatedPackageData.Version = version;
+                updatedPackageData.Version = metadata.Version;
             } catch (err) {
                 res.status(500).json({ error: 'Failed to fetch and process GitHub repository.' });
                 return;
