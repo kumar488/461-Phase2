@@ -2,10 +2,10 @@ import axios from 'axios';
 import { parse } from 'json5';
 import AdmZip from 'adm-zip';
 import calculateNetScore, { calculateBusFactorScore, calculateCorrectness,
-    calculateRampUpScore, calculateResponsiveMaintainerScore, calculateVersionPinning
+    calculateRampUpScore, calculateResponsiveMaintainerScore, calculateVersionPinning, calculatePullRequestReviewFraction
   } from './CalculateMetrics';
 
-import  {fetchRepositoryUsers, fetchRepositoryIssues,
+import  {fetchRepositoryUsers, fetchRepositoryIssues, fetchPullRequests, RepositoryResponse,
 RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies
 } from './GitHubAPIcaller';                          
 
@@ -167,6 +167,7 @@ export async function calculateScores(githubURL: string): Promise<Record<string,
         const repoIssues: RepositoryIssues = await fetchRepositoryIssues(owner, repository);
         const repoUsers: RepositoryUsers = await fetchRepositoryUsers(owner, repository);
         const repoDependencies: RepositoryDependencies = await fetchRepositoryDependencies(owner, repository);
+        const repoResponse: RepositoryResponse = await fetchPullRequests(owner, repository);
 
         // Calculate individual metrics and their latencies
         start = performance.now();
@@ -194,6 +195,11 @@ export async function calculateScores(githubURL: string): Promise<Record<string,
         end = performance.now();
         const versionPinningLatency = ((end - start) / 1000).toFixed(3);
 
+        start = performance.now();
+        const pullRequest = calculatePullRequestReviewFraction(repoResponse);
+        end = performance.now();
+        const pullRequestLatency = ((end - start) / 1000).toFixed(3);
+
         // Calculate net score
         const netScore = calculateNetScore(
             busFactor,
@@ -201,7 +207,8 @@ export async function calculateScores(githubURL: string): Promise<Record<string,
             responsiveMaintainer,
             rampUp,
             foundLicense,
-            versionPinning
+            versionPinning,
+            pullRequest
         );
 
         netScoreEnd = performance.now();
@@ -223,6 +230,8 @@ export async function calculateScores(githubURL: string): Promise<Record<string,
             VersionPinning_Latency: versionPinningLatency,
             License: foundLicense,
             License_Latency: foundLicenseLatency,
+            PullRequest: pullRequest,
+            PullRequest_Latency: pullRequestLatency
         };
     } catch (error) {
         console.error(`Error calculating scores for URL ${githubURL}:`, error);

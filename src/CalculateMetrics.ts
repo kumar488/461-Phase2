@@ -1,5 +1,5 @@
 import {fetchRepositoryInfo, fetchRepositoryUsers, fetchRepositoryIssues,
-  RepositoryInfo, RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies
+  RepositoryInfo, RepositoryIssues, RepositoryUsers, fetchRepositoryDependencies, RepositoryDependencies, RepositoryResponse
 } from './GitHubAPIcaller';
 
 export function calculateBusFactorScore(users: RepositoryUsers): number {
@@ -126,10 +126,59 @@ export function calculateVersionPinning(dependencies: RepositoryDependencies): n
   return Math.round(versionPinningScore * 100) / 100;
 }
 
-export default function calculateNetScore(busFactor: number, correctness: number, responsiveMaintainer: number,
-                                          rampUp: number, licenseScore: number, versionPinning: number): number {
-  const netScore = licenseScore * ((0.2 * busFactor) + (0.25 * correctness) + (0.35 * responsiveMaintainer) + (0.1 * rampUp) + (0.1 * versionPinning));
+export function checkApproved(edge: { node: { state: string } }): boolean {
+  return edge.node.state === 'APPROVED';
+}
+export function calculatePullRequestReviewFraction(response: RepositoryResponse): number {
+  //let prCursor: string | null = null;
+  let totalLinesWithReview = 0;
+  let totalLinesAdded = 0;
+  const prs = response.data.repository.pullRequests.edges;
+  for (const pr of prs) {
+    const prNode = pr.node;
+    totalLinesAdded += prNode.additions;
+    //const hasReview = prNode.reviews.edges.some(prNode.reviews.edges review => {review.node.state === 'APPROVED'});
+    const hasReview = prNode.reviews.edges.some(checkApproved);
+    if (hasReview) {
+      totalLinesWithReview += prNode.additions;
+    }
+  }
 
-// round to nearest hundredth
-return Math.round(netScore * 100) / 100;
+  //prCursor = prs.length > 0 ? prs[prs.length - 1].node.id : null;
+
+  if (totalLinesAdded === 0) {
+    return 1;
+  }
+
+  const reviewRatio = totalLinesWithReview / totalLinesAdded;
+
+  return reviewRatio;
+//------------------------------------------------------
+  /*
+  const totalPRs = pull_requests.requests.edges.length;
+  //const totalPRs = pull_requests.requests.totalCount;
+  const reviewedPRs = pull_requests.requests.edges.filter(pr => pr.node.reviewed).length;
+
+  if (totalPRs === 0) {
+    return 0;
+  }
+
+  return reviewedPRs / totalPRs;
+  */
+
+}
+
+export default function calculateNetScore(busFactor: number, correctness: number, responsiveMaintainer: number, rampUp: number, licenseScore: number, versionPinning: number, pullRequest: number): number {
+  //Ignore invalid feature scores (only ones that are -1 indicating error computing)
+  busFactor = busFactor === -1 ? 0 : busFactor;
+  correctness = correctness === -1 ? 0 : correctness;
+  responsiveMaintainer = responsiveMaintainer === -1 ? 0 : responsiveMaintainer;
+  rampUp = rampUp === -1 ? 0 : rampUp;
+  licenseScore = licenseScore === -1 ? 0 : licenseScore;
+  versionPinning = versionPinning === -1 ? 0 : versionPinning;
+  pullRequest = pullRequest === -1 ? 0 : pullRequest;
+
+  const netScore = licenseScore * ((0.2 * busFactor) + (0.25 * correctness) + (0.25 * responsiveMaintainer) + (0.1 * rampUp) + (0.1 * versionPinning) + (0.1 * pullRequest));
+
+  return Math.round(netScore * 100) / 100;
 }

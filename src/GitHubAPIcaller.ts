@@ -23,6 +23,22 @@ export interface RepositoryInfo {
   };
 }
 
+interface PullRequest {
+  id: string;
+  additions: number;
+  reviews: { edges: { node: { state: string } }[] };
+}
+
+export interface RepositoryResponse {
+  data: {
+    repository: {
+      pullRequests: {
+        edges: { node: PullRequest }[];
+      };
+    };
+  };
+}
+
 export interface RepositoryIssues {
   data: {
     repository: {
@@ -94,6 +110,52 @@ export interface RepositoryDependencies {
 /////// GraphQL API calls for different information ///////
 
 // function to call API for basic repo information
+
+export async function fetchPullRequests(owner: string, name: string): Promise<RepositoryResponse> {
+  
+  const query = `
+    query {
+      repository(owner: "${owner}", name: "${name}") {
+        pullRequests(first: 100, states: [MERGED], baseRefName: "main") {
+          edges {
+            node {
+              id
+              title
+              additions
+              reviews(first: 1){
+                edges {
+                  node {
+                    state
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }  
+  `;
+
+
+  const response = await fetch(GITHUB_API_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  if(!response.ok) {
+    throw new Error(`Failed to fetch data: ${response.statusText}`);
+  }
+
+  const result: RepositoryResponse = await response.json();
+  
+  return result;
+  
+}
+
 export async function fetchRepositoryInfo(owner: string, name: string): Promise<RepositoryInfo> {
   const query = `
     query {
