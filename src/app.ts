@@ -26,21 +26,33 @@ app.use((req, res, next) => {
     logger.info(`Request:\n${requestLogString}`);
     console.log(`Request:\n${requestLogString}`);
 
-    // Capture response data
     const originalSend = res.send;
     res.send = function (body) {
+        // Parse the response body to extract error if applicable
+        let errorMessage = null;
+        if (typeof body === 'string') {
+            try {
+                const parsedBody = JSON.parse(body);
+                errorMessage = parsedBody.error || 'No error';
+            } catch {
+                errorMessage = 'No error'; // If body is not JSON, assume no error
+            }
+        } else if (typeof body === 'object' && body !== null) {
+            errorMessage = body.error || 'No error';
+        }
+    
         const responseLogData = {
             status: res.statusCode,
-            responseBody: body,
+            error: errorMessage,
         };
-
+    
         // Convert log data to JSON string for response
         const responseLogString = JSON.stringify(responseLogData, null, 2);
-
+    
         // Log the response data
         logger.info(`Response:\n${responseLogString}`);
         console.log(`Response:\n${responseLogString}`);
-
+    
         // Call the original send function with the response body
         return originalSend.call(this, body);
     };
