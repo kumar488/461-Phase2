@@ -270,3 +270,15 @@ export const isValidVersion = (existingVersions: string[], newVersion: string): 
     return patch > maxPatch;
 };
 
+// Function to extract README from a single package's content
+export const extractReadmeFromContent = (base64Content: string): string | null => {
+    try {
+        const zip = new AdmZip(Buffer.from(base64Content, 'base64'));
+        const readmeEntry = zip.getEntries().find(entry => entry.entryName.toLowerCase().includes('readme'));
+        return readmeEntry ? readmeEntry.getData().toString('utf8') : null;
+    } catch (error) {
+        console.error('Error extracting README:', error);
+        return null;
+    }
+};
+
