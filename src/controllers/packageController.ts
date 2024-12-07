@@ -296,7 +296,6 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
             return;
         }
         delete existingPackage.ID;
-        console.log(existingPackage);
 
         const updates = req.body;
 
@@ -355,8 +354,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 }
 
                 const givenName = updates.metadata?.Name || updates.data?.Name;
-                console.log(givenName);
-                console.log(existingPackage.Name);
+
                 if (existingPackage.Name !== givenName) {
                     res.status(400).json({ error: 'Package Name does not match the existing package.' });
                     return;
@@ -370,7 +368,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
 
                 const existingVersions = await getPackageVersions(existingPackage.Name);
 
-                if (!isValidVersion(existingVersions, version)) {
+                if (!isValidVersion(existingVersions, updates.metadata.Version)) {
                     res.status(400).json({ error: 'Invalid version sequence for patch updates.' });
                     return;
                 }
