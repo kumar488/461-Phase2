@@ -237,6 +237,22 @@ export async function getPackageByID(id: number) {
     }
 }
 
+export async function getPackageByName(id: string) {
+    const connection = await createConnection();
+    try {
+        const query = `SELECT * FROM ${tableName} WHERE Name = ?`;
+        const [rows] = await connection.execute(query, [id]);
+        logger.info(`Row with ID ${id} retrieved`);
+        return (rows as PackageData[])[0] || null;
+    } catch (err) {
+        logger.error('Error retrieving row', err);
+        throw err;
+    } finally {
+        await connection.end();
+        logger.info('Connection closed');
+    }
+}
+
 export const getPackageVersions = async (packageName: string): Promise<string[]> => {
     const connection = await createConnection();
     try {
