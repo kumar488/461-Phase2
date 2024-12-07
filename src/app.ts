@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Middleware to log API requests
+// Middleware to log API requests and responses
 app.use((req, res, next) => {
     const logData = {
         timestamp: new Date().toISOString(),
@@ -19,12 +19,31 @@ app.use((req, res, next) => {
         body: req.body,
     };
 
-    // Convert log data to JSON string
-    const logString = JSON.stringify(logData, null, 2);
+    // Convert log data to JSON string for request
+    const requestLogString = JSON.stringify(logData, null, 2);
 
-    // Write logs to a file
-    logger.info(logString);
-    console.log(logString);
+    // Log the request data
+    logger.info(`Request:\n${requestLogString}`);
+    console.log(`Request:\n${requestLogString}`);
+
+    // Capture response data
+    const originalSend = res.send;
+    res.send = function (body) {
+        const responseLogData = {
+            status: res.statusCode,
+            responseBody: body,
+        };
+
+        // Convert log data to JSON string for response
+        const responseLogString = JSON.stringify(responseLogData, null, 2);
+
+        // Log the response data
+        logger.info(`Response:\n${responseLogString}`);
+        console.log(`Response:\n${responseLogString}`);
+
+        // Call the original send function with the response body
+        return originalSend.call(this, body);
+    };
 
     next(); // Pass control to the next middleware/route handler
 });
