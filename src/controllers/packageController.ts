@@ -418,7 +418,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
 
                 // Validate Name matches the existing package
                 if (updates.metadata?.Name || updates.data?.Name || name !== existingPackage.Name) {
-                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
+                    res.status(400).json({ error: 'Name does not match updated package' });
                     return;
                 }
 
@@ -426,7 +426,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 const existingVersions = await getPackageVersions(existingPackage.Name);
 
                 if (!isValidVersion(existingVersions, metadata.Version)) {
-                    res.status(400).json({ error: '4There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
+                    res.status(400).json({ error: 'Not a valid version' });
                     return;
                 }
 
@@ -444,7 +444,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
         }
         const url = await getGithubURL(updatedPackageData.URL);
         if (!url) {
-            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
+            res.status(400).json({ error: 'Can not get github url' });
             return;
         }
 
