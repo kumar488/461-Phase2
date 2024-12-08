@@ -292,7 +292,7 @@ export const extractReadmeFromContent = (base64Content: string): string | null =
             throw new Error('README content is empty or invalid');
         }
 
-        console.log('Extracted README.md Content:', readmeContent); // Debug log
+        //console.log('Extracted README.md Content:', readmeContent); // Debug log
         return readmeContent;
     } catch (error) {
         console.error('Error extracting README.md:', error);
