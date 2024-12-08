@@ -417,7 +417,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 }
 
                 // Validate Name matches the existing package
-                if (name !== existingPackage.Name) {
+                if (updates.metadata?.Name || updates.data?.Name || name !== existingPackage.Name) {
                     res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
