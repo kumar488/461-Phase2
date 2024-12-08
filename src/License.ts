@@ -63,7 +63,7 @@ export async function getLicense(url: string, repository: string): Promise<numbe
 
     } catch (err) { // Error case
         logger.error('Error in cloning or searching for license:', err);
-        return -1;
+        return 0;
     }
 }
 
