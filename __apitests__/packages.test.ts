@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../src/app'; // Ensure this imports your Express app
+import app from '../src/app';
 
 jest.mock('../src/sqlhelper', () => ({
     query: jest.fn().mockResolvedValueOnce([ // Mock SQL queries
