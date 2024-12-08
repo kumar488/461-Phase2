@@ -620,31 +620,24 @@ export const getPackageCost = async (req: Request, res: Response): Promise<void>
 
         // If dependencies are included, calculate the total cost
         const dependencies = extractDependenciesFromContent(pkg.Content);
+        if (!dependencies) {
+            res.status(500).json({ error: 'Failed to extract dependencies' });
+            return;
+        }
         const dependencyCosts = {};
 
         let totalCost = standaloneCost;
+        console.log(dependencies);
 
-        // for (const dependencyName of dependencies) {
-        //     // Fetch each dependency from the database
-        //     const dependencyPkg = await getPackageByName(dependencyName); // Assume this function exists
-        //     if (dependencyPkg) {
-        //         dependencyCosts[dependencyPkg.ID] = {
-        //             standaloneCost: dependencyPkg.COST,
-        //             totalCost: dependencyPkg.COST, // Assume no further transitive dependencies
-        //         };
-        //         totalCost += dependencyPkg.COST;
-        //     }
-        // }
+        const response = {
+            [packageId]: {
+                standaloneCost,
+                totalCost,
+            },
+            ...dependencyCosts,
+        };
 
-        // const response = {
-        //     [packageId]: {
-        //         standaloneCost,
-        //         totalCost,
-        //     },
-        //     ...dependencyCosts,
-        // };
-
-        // res.status(200).json(response);
+        res.status(200).json(response);
     } catch (error) {
         console.error('Error in getPackageCost:', error);
         res.status(500).json({ error: 'Internal Server Error' });
