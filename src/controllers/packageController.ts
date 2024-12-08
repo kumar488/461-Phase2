@@ -417,7 +417,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 const existingVersions = await getPackageVersions(existingPackage.Name);
 
                 if (!isValidVersion(existingVersions, metadata.Version)) {
-                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
+                    res.status(400).json({ error: '4There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
@@ -506,7 +506,7 @@ export const getPackageRate = async (req: Request, res: Response) => {
 
         const packageId = parseInt(req.params.id, 10);
         if (isNaN(packageId)) {
-            res.status(400).json({ error: 'Invalid or missing PackageID' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID' });
             return;
         }
 
@@ -589,7 +589,7 @@ export const getPackageCost = (req: Request, res: Response) => {
         const packageId = req.params.id;
 
         if (!packageId) {
-            res.status(400).json({ error: 'Missing Package ID' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID' });
         }
 
         // Cost calculation logic
@@ -604,7 +604,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         const { RegEx } = req.body;
 
         if (!RegEx) {
-            res.status(400).json({ error: 'Missing required field: regex' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -612,7 +612,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         try {
             parsedRegex = new RegExp(RegEx, 'i'); // Case-insensitive regex
         } catch (error) {
-            res.status(400).json({ error: 'Invalid regex format' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageRegEx or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -620,7 +620,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         const allPackages = await getAllPackages();
 
         if (!allPackages || allPackages.length === 0) {
-            res.status(404).json({ error: 'No packages found in the database' });
+            res.status(404).json({ error: 'No packages found under this regex.' });
             return;
         }
         
@@ -644,7 +644,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         }
 
         if (matchingPackages.length === 0) {
-            res.status(404).json({ error: 'No packages matched the provided regex' });
+            res.status(404).json({ error: 'No packages found under this regex.' });
             return;
         }
 

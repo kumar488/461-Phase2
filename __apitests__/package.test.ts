@@ -1,57 +1,13 @@
-// import { Request, Response } from 'express';
-// import mysql from 'mysql2/promise';
-// import pool from '../src/sqlhelper';
-// import getPackageRate from '../src/controllers/packageController';
 import request from 'supertest';
 import app from '../src/app';
-import { version } from 'os';
-// import { getPackageByID } from '../src/packages/packagedb';
-
-// let connection: mysql.Connection;
-
-// beforeAll(async () => {
-//     // Initialize the connection
-//     connection = await mysql.createConnection({
-//         host: process.env.DB_HOST,
-//         user: process.env.DB_USER,
-//         password: process.env.DB_PASSWORD,
-//         database: process.env.DB_NAME,
-//     });
-// });
-
-// afterAll(async () => {
-//     // Close the connection
-//     if (connection) {
-//         await connection.end();
-//     }
-// });
 
 jest.setTimeout(10000); // Set timeout to 30 seconds
-
-// jest.mock('../src/packages/packagedb', () => ({
-//     getPackageByID: jest.fn(),
-// }));
 
 jest.mock('../src/sqlhelper', () => ({
     query: jest.fn().mockResolvedValueOnce([ // Mock SQL queries
         [{ id: 6, name: 'express', version: '5.0.1' }]
     ]),
 }));
-//write a mock for src/packages/packagedb.ts for addPackage
-// jest.mock('../src/packages/packagedb', () => ({
-//     addPackage: jest.fn().mockResolvedValueOnce({
-//         id: 1, name: 'test-package'
-//     }),
-// }));
-
-// jest.mock('../src/controllers/packageController', () => ({
-//     createPackage: jest.fn(),
-//     getPackageById: jest.fn(),
-//     updatePackage: jest.fn(),
-//     getPackageRate: jest.fn(),
-//     getPackageCost: jest.fn(),
-//     searchPackagesByRegEx: jest.fn(),
-// }));
 
 const {
     createPackage,
@@ -131,57 +87,6 @@ describe('Package API Endpoints', () => {
         });
     });
 
-
-    describe('POST /package/:id', () => {
-        it('should return 400 for missing field or invalid body', async () => {
-            const response = await request(app)
-                .post('/package/1')
-                .send({
-                    "metadata": {
-                      "Name": "string",
-                      "Version": "1.2.3",
-                      "ID": "123567192081501"
-                    },
-                    "data": {
-                      "Name": "string",
-                      "Content": "string",
-                      "URL": "string",
-                      "debloat": true,
-                      "JSProgram": "string"
-                    }
-                });
-            expect(response.status).toBe(400);
-            expect(response.body).toEqual({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
-        });
-        it('should return 201 for valid package data', async () => {
-            jest.mock('../src/packages/packagedb', () => ({
-                addPackage: jest.fn().mockResolvedValueOnce({
-                    id: 1,
-                    name: 'test-package',
-                    version: '1.0.0',
-                    repositoryUrl: 'https://github.com/expressjs/express'
-                }),
-            }));
-            const response = await request(app)
-                .post('/package/6')
-                .send({
-                    "metadata": {
-                      "Name": "express",
-                      "Version": "5.0.1",
-                      "ID": "6"
-                    },
-                    "data": {
-                      "Name": "express",
-                      "URL": "https://github.com/expressjs/express",
-                      "debloat": true,
-                      "JSProgram": "if (process.argv.length === 7) {\nconsole.log('Success')\nprocess.exit(0)\n} else {\nconsole.log('Failed')\nprocess.exit(1)\n}\n"
-                    }
-                });
-            expect(response.status).toBe(400);
-            expect(response.body).toEqual({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
-        });
-    });
-    
     describe('GET /package/:id', () => {
         it('should retrieve a package by ID', async () => {
             const response = await request(app).get('/package/1');
@@ -220,62 +125,162 @@ describe('Package API Endpoints', () => {
         });
     });
 
+    describe('POST /package/:id', () => {
+        it('should return 400 for missing field or invalid body', async () => {
+            const response = await request(app)
+                .post('/package/1')
+                .send({
+                    "metadata": {
+                      "Name": "string",
+                      "Version": "1.2.3",
+                      "ID": "123567192081501"
+                    },
+                    "data": {
+                      "Name": "string",
+                      "Content": "string",
+                      "URL": "string",
+                      "debloat": true,
+                      "JSProgram": "string"
+                    }
+                });
+            expect(response.status).toBe(400);
+            expect(response.body).toEqual({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
+        });
+        it('should return 404 for missing package', async () => {
+            const response = await request(app)
+                .post('/package/99')
+                .send({
+                    "metadata": {
+                      "Name": "string",
+                      "Version": "1.2.3",
+                      "ID": "123567192081501"
+                    },
+                    "data": {
+                      "Name": "string",
+                      "Content": "string",
+                      "URL": "string",
+                      "debloat": true,
+                      "JSProgram": "string"
+                    }
+                });
+            expect(response.status).toBe(404);
+            expect(response.body).toEqual({ error: 'Package does not exist.' });
+        });
+        // it('should return 201 for valid package data', async () => {
+        //     jest.mock('../src/helper', () => ({
+        //         isValidVersion: jest.fn().mockImplementationOnce((existingVersions: string[], newVersion: string) => {
+        //             existingVersions = ["1.0.0"];
+        //             newVersion = "2.0.0";
+        //         })
+        //     }));
+        //     //Note that this will upload a new version using Version: "6.0.1" --> Make sure to delete the new row on the database after testing
+        //     const response = await request(app)
+        //         .post('/package/6')
+        //         .send({
+        //             "metadata": {
+        //               "Name": "express",
+        //               "Version": "6.0.1",
+        //               "ID": "6"
+        //             },
+        //             "data": {
+        //               "Name": "express",
+        //               "URL": "https://github.com/expressjs/express",
+        //               "debloat": false,
+        //               "JSProgram": ""
+        //             }
+        //         });
+        //     expect(response.status).toBe(200);
+        //     expect(response.body).toEqual({ error: 'Version is updated.' });
+        // });
+    });
+    
+
+describe('GET /package/byRegEx', () => {
+    it('should return packages that match the regular expression', async () => {
+        const response = await request(app)
+            .post('/package/byRegEx')
+            .send({ RegEx: 'fecha' });
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual([
+            {
+                "Name": "fecha",
+                "Version": "4.2.3",
+                "ID": 1
+            }
+        ]);
+    });
+
+    it('should return 404 if no packages match the regular expression', async () => {
+        const response = await request(app)
+            .post('/package/byRegEx')
+            .send({ RegEx: '^nonexistent' });
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({ error: 'No packages found under this regex.' });
+    });
+
+    it('should return 400 for invalid regular expression', async () => {
+        const response = await request(app)
+            .post('/package/byRegEx')
+            .send({ RegEx: '[invalid' });
+
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({
+            error: 'There is missing field(s) in the PackageRegEx or it is formed improperly, or is invalid.',
+        });
+    });
+});
 
 
-    // describe('GET /package/:id/rate', () => {
-    //     it('should return ratings for a valid package ID', async () => {
-    //         getPackageRate.mockImplementationOnce((req: Request, res: Response) => {
-    //             res.status(200).json({
-    //                 "BusFactor": 0.2,
-    //                 "BusFactorLatency": 0.1,
-    //                 "Correctness": 0.97,
-    //                 "CorrectnessLatency": 0.1,
-    //                 "RampUp": 0.81,
-    //                 "RampUpLatency": 0.1,
-    //                 "ResponsiveMaintainer": 0.67,
-    //                 "ResponsiveMaintainerLatency": 0.1,
-    //                 "LicenseScore": 1,
-    //                 "LicenseScoreLatency": 0.1,
-    //                 "GoodPinningPractice": 0.2,
-    //                 "GoodPinningPracticeLatency": 0.1,
-    //                 "PullRequest": 1,
-    //                 "PullRequestLatency": 0.1,
-    //                 "NetScore": 0.65,
-    //                 "NetScoreLatency": 0.1
-    //             });
-    //         });
+    describe('GET /package/:id/rate', () => {
+        it('should return ratings for a valid package ID', async () => {
+            const response = await request(app).get('/package/6/rate');
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual({
+                "BusFactor": 0.2,
+                "BusFactorLatency": 0.1,
+                "Correctness": 0.97,
+                "CorrectnessLatency": 0.1,
+                "RampUp": 0.81,
+                "RampUpLatency": 0.1,
+                "ResponsiveMaintainer": 0.67,
+                "ResponsiveMaintainerLatency": 0.1,
+                "LicenseScore": 1,
+                "LicenseScoreLatency": 0.1,
+                "GoodPinningPractice": 0.2,
+                "GoodPinningPracticeLatency": 0.1,
+                "PullRequest": 1,
+                "PullRequestLatency": 0.1,
+                "NetScore": 0.65,
+                "NetScoreLatency": 0.1
+            });
+        });
+        it('should return 400 if missing fields', async () => {
+            const response = await request(app).get('/package/null/rate');
 
-    //         const response = await request(app).get('/package/6/rate');
-    //         expect(response.status).toBe(200);
-    //         expect(response.body).toEqual({
-    //             "BusFactor": 0.2,
-    //             "BusFactorLatency": 0.1,
-    //             "Correctness": 0.97,
-    //             "CorrectnessLatency": 0.1,
-    //             "RampUp": 0.81,
-    //             "RampUpLatency": 0.1,
-    //             "ResponsiveMaintainer": 0.67,
-    //             "ResponsiveMaintainerLatency": 0.1,
-    //             "LicenseScore": 1,
-    //             "LicenseScoreLatency": 0.1,
-    //             "GoodPinningPractice": 0.2,
-    //             "GoodPinningPracticeLatency": 0.1,
-    //             "PullRequest": 1,
-    //             "PullRequestLatency": 0.1,
-    //             "NetScore": 0.65,
-    //             "NetScoreLatency": 0.1
-    //         });
-    //     });
+            expect(response.status).toBe(400);
+            expect(response.body).toEqual({ error: 'There is missing field(s) in the PackageID' });
+        });
+        it('should return 404 if package not found', async () => {
+            const response = await request(app).get('/package/999/rate');
 
-    //     it('should return 404 if package not found', async () => {
-    //         getPackageRate.mockImplementationOnce((req: Request, res: Response) => {
-    //             res.status(404).json({ error: 'Package does not exist' });
-    //         });
+            expect(response.status).toBe(404);
+            expect(response.body).toEqual({ error: 'Package does not exist.' });
+        });
+    });
 
-    //         const response = await request(app).get('/package/999/rate');
+    describe('GET /package/:id/rate', () => {
+        it('should return ratings for a valid package ID', async () => {
+            const response = await request(app).get('/package/6/cost');
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual({ cost: 100 });
+        });
+        it('should return 400 if missing fields', async () => {
+            const response = await request(app).get('/package/null/cost');
 
-    //         expect(response.status).toBe(404);
-    //         expect(response.body).toEqual({ error: 'Package does not exist' });
-    //     });
-    // });
+            expect(response.status).toBe(400);
+            expect(response.body).toEqual({ error: 'There is missing field(s) in the PackageID' });
+        });
+    });
 });
