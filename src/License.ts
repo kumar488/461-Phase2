@@ -58,7 +58,7 @@ export async function getLicense(url: string, repository: string): Promise<numbe
         } else if (foundLicense || foundReadme) {
             return 0; // License found but not compatible
         } else {
-            return -1; // License not found
+            return 0; // License not found
         }
 
     } catch (err) { // Error case
