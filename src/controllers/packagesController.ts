@@ -1,8 +1,8 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import pool from '../sqlhelper';
 import semver from 'semver'; // For semantic versioning logic
 
-export const getPackages = async (req: Request, res: Response) => {
+export const getPackages = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Extract package queries and offset
         const packageQueries = req.body;
@@ -88,7 +88,8 @@ export const getPackages = async (req: Request, res: Response) => {
         })));
     } catch (error) {
         //console.error('Error fetching packages:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        // res.status(500).json({ error: 'Internal Server Error' });
+        next(error);
     }
 };
 

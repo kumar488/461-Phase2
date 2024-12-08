@@ -4,36 +4,36 @@ import { Buffer } from 'buffer';
 import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, 
     extractPackageJsonInfo, debloatPackageContent, calculateScores, isValidVersion,
     extractReadmeFromContent, extractDependenciesFromContent } from '../helper';
-import { getRepositoryRating } from '../main';
-import pool from '../sqlhelper';
+// import { getRepositoryRating } from '../main';
+// import pool from '../sqlhelper';
 
-export const getPackageVersionRange = async (packageName: string): Promise<string> => {
-    try {
-        // Query to get all versions for the given package name
-        const [rows]: any = await pool.query(
-            'SELECT version FROM packages WHERE name = ? ORDER BY version',
-            [packageName]
-        );
+// export const getPackageVersionRange = async (packageName: string): Promise<string> => {
+//     try {
+//         // Query to get all versions for the given package name
+//         const [rows]: any = await pool.query(
+//             'SELECT version FROM packages WHERE name = ? ORDER BY version',
+//             [packageName]
+//         );
 
-        if (rows.length === 0) {
-            return `No versions found for package: ${packageName}`;
-        }
+//         if (rows.length === 0) {
+//             return `No versions found for package: ${packageName}`;
+//         }
 
-        // Extract all versions from the result
-        const versions = rows.map((row: any) => row.version);
+//         // Extract all versions from the result
+//         const versions = rows.map((row: any) => row.version);
 
-        // If only one version, return it
-        if (versions.length === 1) {
-            return versions[0];
-        }
+//         // If only one version, return it
+//         if (versions.length === 1) {
+//             return versions[0];
+//         }
 
-        // If multiple versions, return the range
-        return `${versions[0]}-${versions[versions.length - 1]}`;
-    } catch (error) {
-        console.error('Error getting package version range:', error);
-        throw new Error('Internal Server Error while getting package version range');
-    }
-};
+//         // If multiple versions, return the range
+//         return `${versions[0]}-${versions[versions.length - 1]}`;
+//     } catch (error) {
+//         console.error('Error getting package version range:', error);
+//         throw new Error('Internal Server Error while getting package version range');
+//     }
+// };
 
 export const createPackage = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -54,12 +54,12 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         // }
 
         if (!packageData.Content && !packageData.URL) {
-            res.status(400).json({ error: 'Either Content or URL must be provided.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
             return;
         }
 
         if (packageData.Content && packageData.URL) {
-            res.status(400).json({ error: 'Content and URL cannot both be provided.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -69,7 +69,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         if (packageData.Content) {
             // Content is provided, ensure required fields are present
             if (!packageData.Name) {
-                res.status(400).json({ error: 'Missing required field: Name when Content is provided.' });
+                res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
                 return;
             }
 
@@ -79,7 +79,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
 
                 const { name, version, repositoryUrl } = extractPackageJsonInfo(packageJson);
                 if (!name || !version) {
-                    res.status(400).json({ error: 'Failed to retrieve Name or Version from package.json.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
                     return;
                 }
 
@@ -94,7 +94,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
                 }
                 delete finalPackageData.debloat;
             } catch (error : any) {
-                res.status(400).json({ error: `Failed to process Content: ${error.message}` });
+                res.status(400).json({ error: `There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.` });
                 return;
             }
         } else if (packageData.URL) {
@@ -102,7 +102,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
             const githubURL = await getGithubURL(packageData.URL);
 
             if (!githubURL) {
-                res.status(400).json({ error: 'Invalid URL: Unable to resolve GitHub URL from the provided URL.' });
+                res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
                 return;
             }
 
@@ -111,7 +111,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
 
                 const { name, version } = extractPackageJsonInfo(packageJson);
                 if (!name || !version) {
-                    res.status(400).json({ error: 'Failed to retrieve Name or Version from GitHub repository.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
                     return;
                 }
 
@@ -131,7 +131,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         const url = await getGithubURL(finalPackageData.URL);
         if (!url) {
             // Status code 400 may change (not in spec sheet)
-            res.status(400).json({ error: 'Failed to fetch and process GitHub repository.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -201,7 +201,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         console.error('Error in createPackage:', err); // Debugging
         switch (err.code) {
             case 400:
-                res.status(400).json({ error: err.message });
+                res.status(400).json({ error: 'There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid.' });
                 break;
             case 409:
                 res.status(409).json({ error: err.message });
@@ -231,12 +231,13 @@ export const getPackageById = async (req: Request, res: Response) => {
         // Extract package ID from path parameters
         const packageId = req.params.id;
         if (!packageId || isNaN(Number(packageId))) {
-            res.status(400).json({ error: 'Invalid or missing Package ID.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
         // Fetch package by ID
         let pkg = await getPackageByID(Number(packageId));
+
         if (!pkg) {
             // Attempt to fetch package by name if not found by ID
             pkg = await getPackageByName(packageId);
@@ -249,7 +250,7 @@ export const getPackageById = async (req: Request, res: Response) => {
 
         // Ensure required fields are present
         if (!pkg.Content || !pkg.Name || !pkg.Version) { //removed pkg.JSProgram
-            res.status(400).json({ error: 'Package data is incomplete or invalid.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -304,7 +305,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
         const { metadata, data } = updates;
 
         if (!metadata || !metadata.ID) {
-            res.status(400).json({ error: 'Missing metadata with required ID field.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -314,23 +315,23 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
         // }
 
         if (!data.Content && !data.URL) {
-            res.status(400).json({ error: 'Either Content or URL must be provided in data.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
         if (data.Content && data.URL) {
-            res.status(400).json({ error: 'Content and URL cannot both be provided in data.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
         // Ensure method consistency (Content vs. URL)
         if (data.Content && existingPackage.UPLOADED_BY_URL) {
-            res.status(400).json({ error: 'Packages uploaded via URL must be updated via URL.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
         if (data.URL && !existingPackage.UPLOADED_BY_URL) {
-            res.status(400).json({ error: 'Packages uploaded via Content must be updated via Content.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -340,7 +341,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
 
         if (data.Content) {
             if (!data.Name) {
-                res.status(400).json({ error: 'Missing required field: Name when Content is provided.' });
+                res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                 return;
             }
 
@@ -350,27 +351,27 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
 
                 const { name, version, repositoryUrl } = extractPackageJsonInfo(packageJson);
                 if (!name || !version) {
-                    res.status(400).json({ error: 'Failed to retrieve Name or Version from package.json.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
                 const givenName = updates.metadata?.Name || updates.data?.Name;
 
                 if (existingPackage.Name !== givenName) {
-                    res.status(400).json({ error: 'Package Name does not match the existing package.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
                 // Fetch all existing versions for the same package
                 if (!existingPackage.Name) {
-                    res.status(400).json({ error: 'Package Name is missing from the existing package data.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
                 const existingVersions = await getPackageVersions(existingPackage.Name);
 
                 if (!isValidVersion(existingVersions, updates.metadata.Version)) {
-                    res.status(400).json({ error: 'Invalid version sequence for patch updates.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
@@ -385,7 +386,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 }
 
             } catch (error: any) {
-                res.status(400).json({ error: `Failed to process Content: ${error.message}` });
+                res.status(400).json({ error: `There is missing field(s) in the PackageID or it is formed improperly, or is invalid.` });
                 return;
             }
         } else if (data.URL) {
@@ -393,7 +394,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
             const githubURL = await getGithubURL(data.URL);
 
             if (!githubURL) {
-                res.status(400).json({ error: 'Invalid URL: Unable to resolve GitHub URL from the provided URL.' });
+                res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                 return;
             }
 
@@ -402,13 +403,13 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
 
                 const { name, version } = extractPackageJsonInfo(packageJson);
                 if (!name || !version) {
-                    res.status(400).json({ error: 'Failed to retrieve Name or Version from GitHub repository.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
                 // Validate Name matches the existing package
                 if (name !== existingPackage.Name) {
-                    res.status(400).json({ error: 'Package Name does not match the existing package.' });
+                    res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
@@ -416,7 +417,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 const existingVersions = await getPackageVersions(existingPackage.Name);
 
                 if (!isValidVersion(existingVersions, metadata.Version)) {
-                    res.status(400).json({ error: 'Invalid version sequence for patch updates.' });
+                    res.status(400).json({ error: '4There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                     return;
                 }
 
@@ -434,7 +435,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
         }
         const url = await getGithubURL(updatedPackageData.URL);
         if (!url) {
-            res.status(400).json({ error: 'Failed to fetch and process GitHub repository.' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -481,7 +482,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
         console.error('Error in updatePackage:', err);
         switch (err.code) {
             case 400:
-                res.status(400).json({ error: err.message });
+                res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
                 break;
             case 424:
                 res.status(424).json({ error: err.message });
@@ -505,7 +506,7 @@ export const getPackageRate = async (req: Request, res: Response) => {
 
         const packageId = parseInt(req.params.id, 10);
         if (isNaN(packageId)) {
-            res.status(400).json({ error: 'Invalid or missing PackageID' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID' });
             return;
         }
 
@@ -655,7 +656,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         const { RegEx } = req.body;
 
         if (!RegEx) {
-            res.status(400).json({ error: 'Missing required field: regex' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -663,7 +664,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         try {
             parsedRegex = new RegExp(RegEx, 'i'); // Case-insensitive regex
         } catch (error) {
-            res.status(400).json({ error: 'Invalid regex format' });
+            res.status(400).json({ error: 'There is missing field(s) in the PackageRegEx or it is formed improperly, or is invalid.' });
             return;
         }
 
@@ -671,7 +672,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         const allPackages = await getAllPackages();
 
         if (!allPackages || allPackages.length === 0) {
-            res.status(404).json({ error: 'No packages found in the database' });
+            res.status(404).json({ error: 'No packages found under this regex.' });
             return;
         }
         
@@ -695,7 +696,7 @@ export const searchPackagesByRegEx = async (req: Request, res: Response): Promis
         }
 
         if (matchingPackages.length === 0) {
-            res.status(404).json({ error: 'No packages matched the provided regex' });
+            res.status(404).json({ error: 'No packages found under this regex.' });
             return;
         }
 

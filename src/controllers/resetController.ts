@@ -15,6 +15,6 @@ export const resetSystem = async (req: Request, res: Response) => {
         res.status(200).json({ message: 'System reset to default state successfully' });
     } catch (error) {
         console.error('Error during system reset:', error);
-        res.status(500).json({ error: 'Internal Server Error during system reset' });
+        res.status(401).json({ error: 'You do not have permission to reset the registry.' });
     }
 };
