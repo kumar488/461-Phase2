@@ -1,6 +1,6 @@
 # ACME Corporation: A Trustworthy Module Registry
 
-This project outlines a **Package Registry** tool and its **RESTful API** designed to help ACME Corporation engineers store, organize, and evaluate trustworthy software packages without relying on the polluted npm registry. The tool assesses modules based on several key metrics, such as **Ramp Up**, **Correctness**, **Bus Factor**, **Maintainer Responsiveness**, **License Compatibility**, **Version Pinning Practice**, and **Pull Request Review Practice**.
+This project outlines a **Package Registry** tool and its **RESTful API** designed to help ACME Corporation engineers store, organize, and evaluate trustworthy software packages without relying on the polluted npm registry. The rating endpoin tool assesses modules based on several key metrics, such as **Ramp Up**, **Correctness**, **Bus Factor**, **Maintainer Responsiveness**, **License Compatibility**, **Version Pinning Practice**, and **Pull Request Review Practice**.
 
 ## Table of Contents
 
