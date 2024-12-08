@@ -274,10 +274,28 @@ export const isValidVersion = (existingVersions: string[], newVersion: string): 
 export const extractReadmeFromContent = (base64Content: string): string | null => {
     try {
         const zip = new AdmZip(Buffer.from(base64Content, 'base64'));
-        const readmeEntry = zip.getEntries().find(entry => entry.entryName.toLowerCase().includes('readme'));
-        return readmeEntry ? readmeEntry.getData().toString('utf8') : null;
+
+        // Find an entry that matches exactly 'readme.md' (case-insensitive)
+        const readmeEntry = zip.getEntries().find(entry =>
+            entry.entryName.toLowerCase() === 'readme.md'
+        );
+
+        if (!readmeEntry) {
+            console.error('No README.md file found in the package');
+            return null;
+        }
+
+        const readmeContent = readmeEntry.getData().toString('utf8').trim();
+
+        // Validate README content
+        if (!readmeContent || readmeContent.length === 0) {
+            throw new Error('README content is empty or invalid');
+        }
+
+        console.log('Extracted README.md Content:', readmeContent); // Debug log
+        return readmeContent;
     } catch (error) {
-        console.error('Error extracting README:', error);
+        console.error('Error extracting README.md:', error);
         return null;
     }
 };
