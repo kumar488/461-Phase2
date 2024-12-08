@@ -417,7 +417,14 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 }
 
                 // Validate Name matches the existing package
-                if (updates.metadata?.Name || updates.data?.Name || name !== existingPackage.Name) {
+
+                const updateName = updates.metadata?.Name || updates.data?.Name;
+                if (updateName !== existingPackage.Name) {
+                    res.status(400).json({ error: 'Name does not match updated package' });
+                    return;
+                }
+
+                if( existingPackage.Name === undefined) {
                     res.status(400).json({ error: 'Name does not match updated package' });
                     return;
                 }
