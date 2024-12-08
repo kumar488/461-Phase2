@@ -143,7 +143,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         finalPackageData.RESPONSIVE_MAINTAINER_SCORE = scores.ResponsiveMaintainer;
         finalPackageData.LICENSE_SCORE = scores.License;
         finalPackageData.PINNED_PRACTICE_SCORE = scores.VersionPinning;
-        finalPackageData.PULL_REQUEST_RATING_SCORE = -1; // Placeholder for future implementation
+        finalPackageData.PULL_REQUEST_RATING_SCORE = scores.PullRequest; // Placeholder for future implementation
 
         // Check each score against the threshold
         const scoreChecks = [
@@ -154,6 +154,7 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
             { score: scores.ResponsiveMaintainer, name: 'ResponsiveMaintainer' },
             { score: scores.License, name: 'License' },
             { score: scores.VersionPinning, name: 'VersionPinning' },
+            { score: scores.PullRequestRating, name: 'PullRequestRating' },
         ];
         
         const threshold = 0.5;
