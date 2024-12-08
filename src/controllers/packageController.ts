@@ -414,13 +414,13 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
                 // Check version sequence for patch
                 const existingVersions = await getPackageVersions(existingPackage.Name);
 
-                if (!isValidVersion(existingVersions, version)) {
+                if (!isValidVersion(existingVersions, metadata.Version)) {
                     res.status(400).json({ error: 'Invalid version sequence for patch updates.' });
                     return;
                 }
 
                 updatedPackageData.Content = base64Content;
-                updatedPackageData.Version = version;
+                updatedPackageData.Version = metadata.Version;
             } catch (err) {
                 res.status(500).json({ error: 'Failed to fetch and process GitHub repository.' });
                 return;
