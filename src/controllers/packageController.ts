@@ -3,7 +3,7 @@ import { addPackage, getPackageByID, getPackageVersions, getAllPackages, getPack
 import { Buffer } from 'buffer';
 import { getGithubURL, fetchAndProcessGitHubRepo, extractPackageJsonFromContent, 
     extractPackageJsonInfo, debloatPackageContent, calculateScores, isValidVersion,
-    extractReadmeFromContent } from '../helper';
+    extractReadmeFromContent, extractDependenciesFromContent } from '../helper';
 import { getRepositoryRating } from '../main';
 import pool from '../sqlhelper';
 
@@ -446,7 +446,7 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
         updatedPackageData.RESPONSIVE_MAINTAINER_SCORE = scores.ResponsiveMaintainer;
         updatedPackageData.LICENSE_SCORE = scores.License;
         updatedPackageData.PINNED_PRACTICE_SCORE = scores.VersionPinning;
-        updatedPackageData.PULL_REQUEST_RATING_SCORE = -1; // Placeholder for future implementation
+        updatedPackageData.PULL_REQUEST_RATING_SCORE = scores.pullRequest; // Placeholder for future implementation
         
         
         const buffer = Buffer.from(updatedPackageData.Content || "", 'base64');
@@ -583,17 +583,69 @@ export const getPackageRate = async (req: Request, res: Response) => {
     }
 };
 
-export const getPackageCost = (req: Request, res: Response) => {
+export const getPackageCost = async (req: Request, res: Response): Promise<void> => {
     try {
         const packageId = req.params.id;
+        const includeDependencies = req.query.dependency === 'true';
 
         if (!packageId) {
             res.status(400).json({ error: 'Missing Package ID' });
+            return;
         }
 
-        // Cost calculation logic
-        res.status(200).json({ cost: 100 });
+        // Fetch the package by ID
+        const pkg = await getPackageByID(Number(packageId));
+        if (!pkg) {
+            res.status(404).json({ error: 'Package does not exist' });
+            return;
+        }
+
+        if (pkg.COST === undefined || pkg.Content === undefined) {
+            res.status(500).json({ error: 'Package data is incomplete or invalid' });
+            return;
+        }
+
+        const standaloneCost = parseFloat(pkg.COST.toFixed(2)); // The size in MB stored in the database
+
+        // If dependencies are not included, return standalone cost
+        if (!includeDependencies) {
+            res.status(200).json({
+                [packageId]: {
+                    totalCost: standaloneCost,
+                },
+            });
+            return;
+        }
+
+        // If dependencies are included, calculate the total cost
+        const dependencies = extractDependenciesFromContent(pkg.Content);
+        const dependencyCosts = {};
+
+        let totalCost = standaloneCost;
+
+        // for (const dependencyName of dependencies) {
+        //     // Fetch each dependency from the database
+        //     const dependencyPkg = await getPackageByName(dependencyName); // Assume this function exists
+        //     if (dependencyPkg) {
+        //         dependencyCosts[dependencyPkg.ID] = {
+        //             standaloneCost: dependencyPkg.COST,
+        //             totalCost: dependencyPkg.COST, // Assume no further transitive dependencies
+        //         };
+        //         totalCost += dependencyPkg.COST;
+        //     }
+        // }
+
+        // const response = {
+        //     [packageId]: {
+        //         standaloneCost,
+        //         totalCost,
+        //     },
+        //     ...dependencyCosts,
+        // };
+
+        // res.status(200).json(response);
     } catch (error) {
+        console.error('Error in getPackageCost:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };

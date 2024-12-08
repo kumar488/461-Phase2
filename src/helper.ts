@@ -300,3 +300,19 @@ export const extractReadmeFromContent = (base64Content: string): string | null =
     }
 };
 
+export const extractDependenciesFromContent = (base64Content: string): string[] => {
+    try {
+        const zip = new AdmZip(Buffer.from(base64Content, 'base64'));
+        const packageJsonEntry = zip.getEntry('package.json');
+        if (!packageJsonEntry) {
+            throw new Error('package.json not found in package content');
+        }
+
+        const packageJson = JSON.parse(packageJsonEntry.getData().toString('utf8'));
+        return Object.keys(packageJson.dependencies || {});
+    } catch (error) {
+        console.error('Error extracting dependencies:', error);
+        return [];
+    }
+};
+
