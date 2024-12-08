@@ -136,14 +136,23 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         }
 
         const scores = await calculateScores(url);
+        console.log(scores);
         finalPackageData.NET_SCORE = scores.NetScore;
+        finalPackageData.NET_SCORE_LATENCY = scores.NetScore_Latency;
         finalPackageData.BUS_FACTOR_SCORE = scores.BusFactor;
+        finalPackageData.BUS_FACTOR_SCORE_LATENCY = scores.BusFactor_Latency;
         finalPackageData.RAMP_UP_SCORE = scores.RampUp;
+        finalPackageData.RAMP_UP_SCORE_LATENCY = scores.RampUp_Latency;
         finalPackageData.CORRECTNESS_SCORE = scores.Correctness;
+        finalPackageData.CORRECTNESS_SCORE_LATENCY = scores.Correctness_Latency
         finalPackageData.RESPONSIVE_MAINTAINER_SCORE = scores.ResponsiveMaintainer;
+        finalPackageData.RESPONSIVE_MAINTAINER_SCORE_LATENCY = scores.ResponsiveMaintainer_Latency
         finalPackageData.LICENSE_SCORE = scores.License;
+        finalPackageData.LICENSE_SCORE_LATENCY = scores.License_Latency
         finalPackageData.PINNED_PRACTICE_SCORE = scores.VersionPinning;
+        finalPackageData.PINNED_PRACTICE_SCORE_LATENCY = scores.VersionPinning_Latency
         finalPackageData.PULL_REQUEST_RATING_SCORE = scores.PullRequest; // Placeholder for future implementation
+        finalPackageData.PULL_REQUEST_RATING_SCORE_LATENCY = scores.PullRequest_Latency; // Placeholder for future implementation
 
         // Check each score against the threshold
         const scoreChecks = [
@@ -441,13 +450,21 @@ export const updatePackage = async (req: Request, res: Response): Promise<void> 
 
         const scores = await calculateScores(url);
         updatedPackageData.NET_SCORE = scores.NetScore;
+        updatedPackageData.NET_SCORE_LATENCY = scores.NetScore_Latency;
         updatedPackageData.BUS_FACTOR_SCORE = scores.BusFactor;
+        updatedPackageData.BUS_FACTOR_SCORE_LATENCY = scores.BusFactor_Latency;
         updatedPackageData.RAMP_UP_SCORE = scores.RampUp;
+        updatedPackageData.RAMP_UP_SCORE_LATENCY = scores.RampUp_Latency;
         updatedPackageData.CORRECTNESS_SCORE = scores.Correctness;
+        updatedPackageData.CORRECTNESS_SCORE_LATENCY = scores.Correctness_Latency;
         updatedPackageData.RESPONSIVE_MAINTAINER_SCORE = scores.ResponsiveMaintainer;
+        updatedPackageData.RESPONSIVE_MAINTAINER_SCORE_LATENCY = scores.ResponsiveMaintainer_Latency;
         updatedPackageData.LICENSE_SCORE = scores.License;
+        updatedPackageData.LICENSE_SCORE_LATENCY = scores.License_Latency;
         updatedPackageData.PINNED_PRACTICE_SCORE = scores.VersionPinning;
+        updatedPackageData.PINNED_PRACTICE_SCORE_LATENCY = scores.VersionPinning_Latency
         updatedPackageData.PULL_REQUEST_RATING_SCORE = scores.pullRequest; // Placeholder for future implementation
+        updatedPackageData.PULL_REQUEST_RATING_SCORE_LATENCY = scores.pullRequest_Latency; // Placeholder for future implementation
         
         
         const buffer = Buffer.from(updatedPackageData.Content || "", 'base64');
@@ -518,13 +535,21 @@ export const getPackageRate = async (req: Request, res: Response) => {
 
         const {
             BUS_FACTOR_SCORE,
+            BUS_FACTOR_SCORE_LATENCY,
             RAMP_UP_SCORE,
+            RAMP_UP_SCORE_LATENCY,
             CORRECTNESS_SCORE,
+            CORRECTNESS_SCORE_LATENCY,
             RESPONSIVE_MAINTAINER_SCORE,
+            RESPONSIVE_MAINTAINER_SCORE_LATENCY,
             LICENSE_SCORE,
+            LICENSE_SCORE_LATENCY,
             PINNED_PRACTICE_SCORE,
+            PINNED_PRACTICE_SCORE_LATENCY,
             PULL_REQUEST_RATING_SCORE,
+            PULL_REQUEST_RATING_SCORE_LATENCY,
             NET_SCORE,
+            NET_SCORE_LATENCY,
         } = packageData;
 
         if (false && ( //all all packages to send rating
@@ -555,26 +580,40 @@ export const getPackageRate = async (req: Request, res: Response) => {
             return;
         }
 
+        if (
+            BUS_FACTOR_SCORE_LATENCY === undefined ||
+            CORRECTNESS_SCORE_LATENCY === undefined ||
+            RAMP_UP_SCORE_LATENCY === undefined ||
+            RESPONSIVE_MAINTAINER_SCORE_LATENCY === undefined ||
+            LICENSE_SCORE_LATENCY === undefined ||
+            PINNED_PRACTICE_SCORE_LATENCY === undefined ||
+            PULL_REQUEST_RATING_SCORE_LATENCY === undefined ||
+            NET_SCORE_LATENCY === undefined
+        ) {
+            res.status(500).json({ error: 'The package rating system choked on at least one of the metrics.' });
+            return;
+        }
+
         // If the metrics exist, generate latency placeholders (you can replace with real latency if needed)
         const latencyPlaceholder = 0.1;
 
         const response = {
             BusFactor: parseFloat(BUS_FACTOR_SCORE.toFixed(3)),
-            BusFactorLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            BusFactorLatency: parseFloat(BUS_FACTOR_SCORE_LATENCY.toFixed(3)),
             Correctness: parseFloat(CORRECTNESS_SCORE.toFixed(3)),
-            CorrectnessLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            CorrectnessLatency: parseFloat(CORRECTNESS_SCORE_LATENCY.toFixed(3)),
             RampUp: parseFloat(RAMP_UP_SCORE.toFixed(3)),
-            RampUpLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            RampUpLatency: parseFloat(RAMP_UP_SCORE_LATENCY.toFixed(3)),
             ResponsiveMaintainer: parseFloat(RESPONSIVE_MAINTAINER_SCORE.toFixed(3)),
-            ResponsiveMaintainerLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            ResponsiveMaintainerLatency: parseFloat(RESPONSIVE_MAINTAINER_SCORE_LATENCY.toFixed(3)),
             LicenseScore: parseFloat(LICENSE_SCORE.toFixed(3)),
-            LicenseScoreLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            LicenseScoreLatency: parseFloat(LICENSE_SCORE_LATENCY.toFixed(3)),
             GoodPinningPractice: parseFloat(PINNED_PRACTICE_SCORE.toFixed(3)),
-            GoodPinningPracticeLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            GoodPinningPracticeLatency: parseFloat(PINNED_PRACTICE_SCORE_LATENCY.toFixed(3)),
             PullRequest: parseFloat(PULL_REQUEST_RATING_SCORE.toFixed(3)),
-            PullRequestLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            PullRequestLatency: parseFloat(PULL_REQUEST_RATING_SCORE_LATENCY.toFixed(3)),
             NetScore: parseFloat(NET_SCORE.toFixed(3)),
-            NetScoreLatency: parseFloat(latencyPlaceholder.toFixed(3)),
+            NetScoreLatency: parseFloat(NET_SCORE_LATENCY.toFixed(3)),
         };     
 
         res.status(200).json(response);
