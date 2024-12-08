@@ -116,7 +116,8 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
                 }
 
                 finalPackageData.Content = base64Content;
-                finalPackageData.Name = packageData.name || name;
+                finalPackageData.Name = packageData.Name || name;
+                console.log(finalPackageData.Name);
                 finalPackageData.Version = version;
                 finalPackageData.UPLOADED_BY_URL = true;
 
@@ -136,7 +137,6 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
         }
 
         const scores = await calculateScores(url);
-        console.log(scores);
         finalPackageData.NET_SCORE = scores.NetScore;
         finalPackageData.NET_SCORE_LATENCY = scores.NetScore_Latency;
         finalPackageData.BUS_FACTOR_SCORE = scores.BusFactor;
