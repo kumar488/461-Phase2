@@ -277,7 +277,7 @@ export const extractReadmeFromContent = (base64Content: string): string | null =
 
         // Find an entry that matches exactly 'readme.md' (case-insensitive)
         const readmeEntry = zip.getEntries().find(entry =>
-            entry.entryName.toLowerCase() === 'readme.md'
+            entry.entryName.toLowerCase().endsWith('/readme.md') || entry.entryName.toLowerCase() === 'readme.md'
         );
 
         if (!readmeEntry) {
