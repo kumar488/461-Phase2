@@ -167,7 +167,7 @@ describe('CalculateMetrics functions', () => {
 
   // Test for calculateNetScore
   it('should calculate net score correctly', () => {
-    const netScore = calculateNetScore(0.5, 0.5, 0.5, 0.5, 0, 0.5);
+    const netScore = calculateNetScore(0.5, 0.5, 0.5, 0.5, 0, 0.5, 0.5);
     expect(netScore).toBe(0); // Expect the weighted net score to be around 0.5
   });
 });
