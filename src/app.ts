@@ -5,8 +5,14 @@ import cors from 'cors';
 
 dotenv.config();
 
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    methods: 'GET, POST, DELETE',
+    allowedHeaders: 'Content-Type, Authorization',
+};
+
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
