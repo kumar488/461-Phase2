@@ -20,7 +20,7 @@ const initializeDatabase = async () => {
 const startServer = async () => {
     await initializeDatabase(); // Ensure database is initialized before starting the server
 
-    app.listen(PORT, () => {
+    app.listen(3000, '0.0.0.0', () => {
         logger.info(`Server running on http://localhost:${PORT}`);
         console.log(`Server running on http://localhost:${PORT}`);
     });
