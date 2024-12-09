@@ -117,7 +117,6 @@ export const createPackage = async (req: Request, res: Response): Promise<void> 
 
                 finalPackageData.Content = base64Content;
                 finalPackageData.Name = packageData.Name || name;
-                console.log(finalPackageData.Name);
                 finalPackageData.Version = version;
                 finalPackageData.UPLOADED_BY_URL = true;
 

@@ -65,14 +65,14 @@ describe('getLicense', () => {
     expect(result).toBe(1); // README contains a compatible license
   });
   
-  it('should return -1 when no LICENSE or README file is found', async () => {
+  it('should return 0 when no LICENSE or README file is found', async () => {
     mockClone.mockResolvedValueOnce(undefined); // Simulate successful clone
     mockReaddirSync.mockReturnValueOnce([]); // Simulate no LICENSE or README file
     mockRmSync.mockReturnValueOnce(undefined); // Simulate successful removal
   
     const result = await getLicense(testUrl, testRepo);
   
-    expect(result).toBe(-1); // No license found
+    expect(result).toBe(0); // No license found
   });
   
 });
