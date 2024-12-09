@@ -25,5 +25,7 @@ jobs:
         run: ./run install
 
       - name: Run tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
         run: ./run test
 

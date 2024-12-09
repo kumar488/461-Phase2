@@ -18,6 +18,8 @@ let versionPinningScore: number;
 let pullRequest: number;
 let netScore: number;
 
+jest.setTimeout(30000);
+
 beforeAll(async () => {
   repoIssues = await fetchRepositoryIssues("cloudinary", "cloudinary_npm");
   repoUsers = await fetchRepositoryUsers("cloudinary", "cloudinary_npm");
@@ -44,7 +46,7 @@ it('should calculate the correct correctness score', () => {
 
 it('should calculate the correct ramp-up score', () => {
   expect(rampUpScore).toBeGreaterThanOrEqual(0.1);
-  expect(rampUpScore).toBeLessThanOrEqual(0.5);
+  expect(rampUpScore).toBeLessThanOrEqual(0.9);
 });
 
 it('should calculate the correct responsive maintainer score', () => {

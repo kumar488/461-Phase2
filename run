@@ -3,37 +3,19 @@
 #install option to install dependencies
 if [ "$1" == "install" ]; then
 
-    if ! command -v node &> /dev/null; then #checks for node.js 
+    if ! command -v node &> /dev/null; then # checks for node.js 
         sudo apt update > /dev/null 2>&1
         sudo apt install -y nodejs > /dev/null 2>&1
     fi
 
-    if ! command -v npm &> /dev/null; then #checks for npm
+    if ! command -v npm &> /dev/null; then # checks for npm
         sudo apt install -y npm > /dev/null 2>&1
     fi
 
+    # Install all dependencies from package.json
     npm install > /dev/null 2>&1
 
-    npm install dotenv > /dev/null 2>&1
-
-    npm install winston > /dev/null 2>&1
-
-    npm install shelljs > /dev/null 2>&1
-
-    npm install isomorphic-git > /dev/null 2>&1
-
-    npm install axios > /dev/null 2>&1
-
-    npm install jest > /dev/null 2>&1
-
-    npm install --save-dev jest@29.7.0 > /dev/null 2>&1
-
-    npm i --save-dev @types/jest > /dev/null 2>&1
-
-    npm install --save-dev @types/winston > /dev/null 2>&1
-
-
-    echo "9 dependencies installed..."
+    echo "Dependencies installed from package.json."
 
     exit 0
 fi
