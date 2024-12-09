@@ -48,8 +48,8 @@ const totalTests = testResults.numTotalTests;
 const passedTests = testResults.numPassedTests;
 
 // Get the total and passed test suites
-const totalTestSuites = testResults.testResults.length;
-const passedTestSuites = testResults.testResults.filter(suite => suite.numFailingTests === 0).length;
+// const totalTestSuites = testResults.testResults.length;
+// const passedTestSuites = testResults.testResults.filter(suite => suite.numFailingTests === 0).length;
 
 // Output the formatted result
 console.log(`Total: ${totalTests}`);
