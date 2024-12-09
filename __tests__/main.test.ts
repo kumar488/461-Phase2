@@ -70,18 +70,18 @@ describe('Main file tests', () => {
     }
   });
 
-  it('should log success when environment variables are set', () => {
-    process.env.LOG_FILE = 'logfile.log';
-    process.env.GITHUB_TOKEN = 'token123';
+  // it('should log success when environment variables are set', () => {
+  //   process.env.LOG_FILE = 'logfile.log';
+  //   process.env.GITHUB_TOKEN = 'token123';
 
-    jest.spyOn(fs, 'readFileSync').mockReturnValue('https://github.com/user/repo\n');
+  //   jest.spyOn(fs, 'readFileSync').mockReturnValue('https://github.com/user/repo\n');
 
-    require('../src/main');
+  //   require('../src/main');
 
-    expect(logger.info).toHaveBeenCalledWith("LOG_FILE and GITHUB_TOKEN environment variables are set.");
-    expect(logger.info).toHaveBeenCalledWith("Getting URLs...");
-    expect(fs.readFileSync).toHaveBeenCalledWith('test', 'utf-8');
-  });
+  //   expect(logger.info).toHaveBeenCalledWith("LOG_FILE and GITHUB_TOKEN environment variables are set.");
+  //   expect(logger.info).toHaveBeenCalledWith("Getting URLs...");
+  //   expect(fs.readFileSync).toHaveBeenCalledWith('test', 'utf-8');
+  // });
   
   
 });

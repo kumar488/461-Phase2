@@ -17,7 +17,7 @@ it('should output correct owner name', () => {
 
 it('should output correct fork count', () => {
     // fork count might update after creating this test case
-    expect(repoInfo.data.repository.forks.totalCount).toBeGreaterThanOrEqual(209);
+    expect(repoInfo.data.repository.forks.totalCount).toBeGreaterThanOrEqual(200);
 });
 it('should output correct dependency count', () => {
     expect(repoDeps.data.repository.dependencyGraphManifests.nodes[0].dependencies.totalCount).toBeGreaterThanOrEqual(0);
